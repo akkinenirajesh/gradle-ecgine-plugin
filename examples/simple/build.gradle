@@ -1,0 +1,22 @@
+buildscript {
+    repositories {
+    	mavenLocal()
+    }
+    dependencies {
+        classpath group: 'org.ecgine.gradle', name: 'gradle-ecgine-plugin',
+                  version: '0.1.0-SNAPSHOT'
+    }
+}
+apply plugin: 'org.ecgine.gradle'
+
+
+
+repositories {
+    mavenLocal()
+    jcenter()
+}
+
+
+task wrapper( type: Wrapper) {
+    gradleVersion = '2.3'
+}
