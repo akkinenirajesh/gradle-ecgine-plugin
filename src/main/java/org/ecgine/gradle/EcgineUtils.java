@@ -1,9 +1,7 @@
 package org.ecgine.gradle;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,26 +15,27 @@ import org.ecgine.gradle.extensions.EcgineExtension;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
+import org.json.JSONObject;
 
 public class EcgineUtils {
-	public static Map<String, String> readJarDependencies(Logger logger, Project project) {
+	public static Map<String, JSONObject> readJarDependencies(Logger logger, Project project) {
 		File ecgine = getDependenciesFile(project);
 		if (!ecgine.exists()) {
 			logger.debug(".ecgine not found:" + ecgine.getAbsolutePath());
 			return new HashMap<>();
 		}
 
-		Map<String, String> existing = new HashMap<>();
-		try (BufferedReader br = new BufferedReader(new FileReader(ecgine))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				String[] split = line.split("=");
-				existing.put(split[0], split[1]);
-			}
+		try {
+			String string = new String(Files.readAllBytes(ecgine.toPath()));
+			JSONObject json = new JSONObject(string);
+			Map<String, JSONObject> all = new HashMap<>();
+			json.keySet().forEach(k -> {
+				all.put(k, json.getJSONObject(k));
+			});
+			return all;
 		} catch (Exception e) {
 			throw new GradleException("Unable to read .ecgine file", e);
 		}
-		return existing;
 	}
 
 	private static File getDependenciesFile(Project project) {
@@ -45,9 +44,15 @@ public class EcgineUtils {
 		return ecgine;
 	}
 
-	public static void updateJarDependencies(Logger logger, Project project, Map<String, String> existing) {
+	public static void updateJarDependencies(Logger logger, Project project, Map<String, JSONObject> existing) {
 		File ecgine = getDependenciesFile(project);
-		writeProperties(logger, ecgine, existing);
+		JSONObject json = new JSONObject();
+		existing.forEach(json::put);
+		try (FileWriter fw = new FileWriter(ecgine)) {
+			fw.write(json.toString());
+		} catch (Exception e) {
+			throw new GradleException("Unable to write file " + ecgine.getName(), e);
+		}
 	}
 
 	public static void writeProperties(Logger logger, File file, Map<String, String> properties) {
@@ -78,7 +83,10 @@ public class EcgineUtils {
 			}
 			String[] split = dep.split(",");
 			for (String jar : split) {
-				jars.add(jar);
+				if (jar.trim().isEmpty()) {
+					continue;
+				}
+				jars.add(jar.trim());
 			}
 		});
 		return jars;

@@ -16,6 +16,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.Configuration;
 import org.ecgine.gradle.extensions.EcgineExtension;
 import org.gradle.api.GradleException;
@@ -100,6 +101,7 @@ public abstract class AbstractStart extends Exec {
 			HttpResponse response = HttpClientBuilder.create().build().execute(request);
 			int code = response.getStatusLine().getStatusCode();
 			if (code != 200) {
+				EntityUtils.consume(response.getEntity());
 				getLogger().info("StatusCode:" + code + " URL:" + url);
 				throw new GradleException("Unable to connect:" + url);
 			}

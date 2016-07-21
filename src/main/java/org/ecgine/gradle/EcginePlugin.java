@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -21,6 +22,8 @@ import org.gradle.api.plugins.osgi.OsgiPlugin;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  *
@@ -70,8 +73,19 @@ public class EcginePlugin implements Plugin<Project> {
 		EcgineExtension ext = (EcgineExtension) project.getExtensions().getByName("ecgine");
 
 		Map<String, String> dependencies = ext.getBundles();
-		Map<String, String> jarDepends = EcgineUtils.readJarDependencies(c.getLogger(), project);
-		Set<String> allJarNames = EcgineUtils.combineAllJars(c.getLogger(), jarDepends, dependencies);
+		Map<String, JSONObject> jarDepends = EcgineUtils.readJarDependencies(c.getLogger(), project);
+
+		Set<String> allJarNames = new HashSet<>();
+		dependencies.forEach((k, v) -> {
+			JSONObject json = jarDepends.get(k);
+			if (!json.getString("specifiedVersion").equals(v)) {
+				return;
+			}
+			if (!json.has("version")) {
+				return;
+			}
+			addDependencies(jarDepends, allJarNames, k, json);
+		});
 
 		FileCollection allJars = project.files(allJarNames.stream().map(s -> new File(s + ".jar")).toArray());
 
@@ -79,6 +93,21 @@ public class EcginePlugin implements Plugin<Project> {
 		allJars.plus(c.getClasspath());
 
 		c.setClasspath(allJars);
+	}
+
+	private void addDependencies(Map<String, JSONObject> jarDepends, Set<String> allJarNames, String k,
+			JSONObject json) {
+		if (!json.has("version")) {
+			return;
+		}
+
+		// Exists, add all dependencies
+		allJarNames.add(k + "_" + json.getString("version"));
+		JSONArray array = json.getJSONArray("dependents");
+		array.forEach(a -> {
+			JSONObject obj = jarDepends.get(a.toString());
+			addDependencies(jarDepends, allJarNames, a.toString(), obj);
+		});
 	}
 
 	private void jar(Task t) {

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,99 +22,123 @@ import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.EcgineExtension;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
-import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskAction;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import groovy.lang.Closure;
-
 public class EcgineBundlesTask extends DefaultTask {
-
-	private HttpClient client;
-
-	@Override
-	public Task configure(Closure closure) {
-		client = HttpClientBuilder.create().build();
-		return super.configure(closure);
-	}
 
 	@TaskAction
 	public void bundles() {
+		HttpClient client = HttpClientBuilder.create().build();
+
 		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
+
+		// Read from file
+		Map<String, JSONObject> allDepends = EcgineUtils.readJarDependencies(getLogger(), getProject());
 
 		// Get all project dependencies
 		Map<String, String> dependencies = ext.getBundles();
 
-		// Get all jar dependencies
-		Map<String, String> jarDepends = calculateJarDependencies(ext, dependencies);
+		Map<String, String> allJars = new HashMap<>();
+		boolean needUpdate = prepareJarDependencies(ext, client, allDepends, dependencies, allJars, true);
+		if (needUpdate) {
+			EcgineUtils.updateJarDependencies(getLogger(), getProject(), allDepends);
+		}
 
-		// Combine all jars
-		Set<String> allJars = EcgineUtils.combineAllJars(getLogger(), jarDepends, dependencies);
-
-		allJars.forEach(j -> downloadBundle(ext, j));
+		Set<String> notFoundJars = new HashSet<>();
+		allJars.forEach((n, v) -> {
+			File jar = downloadBundle(ext, client, n, v);
+			if (!jar.exists()) {
+				notFoundJars.add(jar.getName());
+			}
+		});
+		if (!notFoundJars.isEmpty()) {
+			throw new GradleException();
+		}
+		throw new GradleException();
 	}
 
-	private Map<String, String> calculateJarDependencies(EcgineExtension ext, Map<String, String> dependencies) {
-		Map<String, String> fromFile = EcgineUtils.readJarDependencies(getLogger(), getProject());
-
-		Map<String, String> existing = new HashMap<>();
-
-		Map<String, String> notExisting = new HashMap<>();
-		dependencies.forEach((n, v) -> {
-			if (fromFile.containsKey(n + "_" + v)) {
-				existing.put(n, v);
+	private boolean prepareJarDependencies(EcgineExtension ext, HttpClient client, Map<String, JSONObject> allDepends,
+			Map<String, String> dependencies, Map<String, String> output, boolean needDownload) {
+		Map<String, String> notFound = new HashMap<>();
+		dependencies.forEach((k, v) -> {
+			JSONObject json = allDepends.get(k);
+			if (json == null || !json.getString("specifiedVersion").equals(v)) {
+				notFound.put(k, v);
 			} else {
-				notExisting.put(n, v);
+				if (!json.has("version")) {
+					notFound.put(k, v);
+					return;
+				}
+				output.put(k, json.getString("version"));
+				addDependencies(output, notFound, allDepends, json);
 			}
 		});
 
-		if (!notExisting.isEmpty()) {
-			Map<String, String> newDepends = getDependenciesFromServer(ext, notExisting);
-			existing.putAll(newDepends);
+		if (needDownload && !notFound.isEmpty()) {
+			JSONObject result = getDependenciesFromServer(ext, client, notFound);
+			Map<String, JSONObject> depends = new HashMap<>();
+			result.keySet().forEach(e -> {
+				JSONObject jar = result.getJSONObject(e);
+				if (!jar.has("version")) {
+					getLogger().error("Bundle not found:" + e);
+				}
+				depends.put(e, jar);
+			});
+
+			prepareJarDependencies(ext, client, depends, notFound, output, false);
+			allDepends.putAll(depends);
+			return true;
 		}
 
-		if (!notExisting.isEmpty() || dependencies.size() != fromFile.size()) {
-			EcgineUtils.updateJarDependencies(getLogger(), getProject(), existing);
-		}
-
-		return existing;
+		return false;
 	}
 
-	private Map<String, String> getDependenciesFromServer(EcgineExtension ext, Map<String, String> notExisting) {
+	private void addDependencies(Map<String, String> output, Map<String, String> notFound,
+			Map<String, JSONObject> allDepends, JSONObject json) {
+		// Exists, add all dependencies
+		JSONArray array = json.getJSONArray("dependents");
+		array.forEach(a -> {
+			JSONObject obj = allDepends.get(a.toString());
+			if (!obj.has("version")) {
+				notFound.put(a.toString(), obj.getString("specifiedVersion"));
+				return;
+			}
+			String version = obj.getString("version");
+			output.put(a.toString(), version);
+			addDependencies(output, notFound, allDepends, obj);
+		});
+
+	}
+
+	private JSONObject getDependenciesFromServer(EcgineExtension ext, HttpClient client,
+			Map<String, String> notExisting) {
 		try {
 			String url = ext.getDependenciesUrl();
 			getLogger().info("Downloading dependencies: " + url);
 			HttpPost request = new HttpPost(url);
 			request.addHeader("apikey", ext.getApiKey());
-			JSONArray array = new JSONArray();
-
-			notExisting.forEach((n, v) -> {
-				JSONObject obj = new JSONObject();
-				obj.put("name", n);
-				obj.put("version", v);
-				array.put(obj);
-			});
-			request.setEntity(new StringEntity(array.toString()));
+			JSONObject obj = new JSONObject();
+			notExisting.forEach(obj::put);
+			request.setEntity(new StringEntity(obj.toString()));
 			HttpResponse response = client.execute(request);
 			int code = response.getStatusLine().getStatusCode();
 			if (code != 200) {
+				EntityUtils.consume(response.getEntity());
 				throw new GradleException("StatusCode:" + code + " URL:" + url);
 			}
-			JSONObject result = new JSONObject(EntityUtils.toString(response.getEntity()));
-			getLogger().debug("Got dependencies");
-			Map<String, String> depends = new HashMap<>();
-			result.keySet().forEach(e -> {
-				depends.put(e, result.getString(e));
-			});
-			return depends;
+			String json = EntityUtils.toString(response.getEntity());
+			JSONObject result = new JSONObject(json);
+			getLogger().info("Got dependencies");
+			return result;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private File downloadBundle(EcgineExtension ext, String bundle) {
-		File jar = new File(ext.getPlugins(), bundle + ".jar");
+	private File downloadBundle(EcgineExtension ext, HttpClient client, String name, String version) {
+		File jar = new File(ext.getPlugins(), name + "_" + version + ".jar");
 		if (jar.exists()) {
 			return jar;
 		}
@@ -123,17 +148,17 @@ public class EcgineBundlesTask extends DefaultTask {
 			String url = ext.getDownloadUrl();
 			HttpPost request = new HttpPost(url);
 			request.addHeader("apikey", ext.getApiKey());
-			String[] split = bundle.split("_");
 			List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-			urlParameters.add(new BasicNameValuePair("name", split[0]));
-			urlParameters.add(new BasicNameValuePair("version", split[1]));
+			urlParameters.add(new BasicNameValuePair("name", name));
+			urlParameters.add(new BasicNameValuePair("version", version));
 			request.setEntity(new UrlEncodedFormEntity(urlParameters));
 			HttpResponse response = client.execute(request);
 			int code = response.getStatusLine().getStatusCode();
 			if (code == 200) {
 				IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(jar));
 			} else {
-				getLogger().error("StatusCode:" + code + " URL:" + url);
+				EntityUtils.consume(response.getEntity());
+				getLogger().error("Bundle not found in ecgine repository " + jar.getName());
 			}
 		} catch (Exception e) {
 			throw new GradleException("", e);

@@ -10,7 +10,7 @@ import java.util.Map;
 public class EcgineExtension {
 
 	private static final String MASTER_BUNDLE = "com.vimukti.ecgine.master";
-	private static final String BUNDLE_DOWNLOAD = "/download/bundle";
+	private static final String BUNDLE_DOWNLOAD = "/api/download/bundle";
 	private static final String DEPENDENCY = "/api/dependencies";
 	private static final String CONFIG = "/api/config";
 
