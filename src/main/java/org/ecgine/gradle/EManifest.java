@@ -11,6 +11,7 @@ public class EManifest {
 
 	private String ecgineBundleType;
 	private String symbolicName;
+	private String version;
 	private Project project;
 
 	public EManifest(Project project, File file) {
@@ -21,10 +22,12 @@ public class EManifest {
 			while ((line = br.readLine()) != null) {
 				String[] split = line.split(":");
 				String name = split[0];
-				if (name.equals("")) {
-					symbolicName = split[1].trim();
-				} else if (name.equals("")) {
+				if (name.equals("Bundle-SymbolicName")) {
+					symbolicName = split[1].split(";")[0].trim();
+				} else if (name.equals("Ecgine-BundleType")) {
 					ecgineBundleType = split[1].trim();
+				} else if (name.equals("Bundle-Version")) {
+					version = split[1].trim();
 				}
 				if (symbolicName != null && ecgineBundleType != null) {
 					// Over no need to read entire file.
@@ -53,6 +56,10 @@ public class EManifest {
 
 	public String getSymbolicName() {
 		return symbolicName;
+	}
+
+	public String getVersion() {
+		return version;
 	}
 
 	public Project getProject() {

@@ -40,7 +40,11 @@ public class EcgineUtils {
 
 	private static File getDependenciesFile(Project project) {
 		EcgineExtension ext = (EcgineExtension) project.getExtensions().getByName(EcgineExtension.NAME);
-		File ecgine = new File(ext.getPlugins(), ".ecgine");
+		File plugins = new File(ext.getPlugins());
+		if (!plugins.exists()) {
+			plugins.mkdirs();
+		}
+		File ecgine = new File(plugins, ".ecgine");
 		return ecgine;
 	}
 
@@ -113,14 +117,6 @@ public class EcgineUtils {
 		if (file.exists()) {
 			return new EManifest(p, file);
 		}
-		throw new GradleException("Invalid plugin project. Manifest file not found");
+		return null;
 	}
-
-	public static boolean copyProjectJar(EManifest mf, File plugins) {
-		String name = mf.getSymbolicName();
-		Project p = mf.getProject();
-		File jar = new File(p.getBuildDir(), name + ".jar");
-		return copy(jar, new File(plugins, jar.getName()));
-	}
-
 }

@@ -11,14 +11,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.Configuration;
 import org.ecgine.gradle.extensions.EcgineExtension;
+import org.ecgine.gradle.extensions.Master;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Exec;
 import org.json.JSONArray;
@@ -31,8 +34,14 @@ public abstract class AbstractStart extends Exec {
 		try {
 			EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
 			Configuration cfg = (Configuration) getProject().getExtensions().getByName(type);
+			Master master = (Master) getProject().getExtensions().getByName("master");
+			cfg.property("ecgine.vimukti.master", master.subDomain + ".ecgine.com");
 			JSONObject config = getConfiguration(ext, type);
-			List<String> cmds = prepareSetup(ext.getPlugins(), cfg, ext.getSetup(), type, config);
+			File plugins = new File(ext.getPlugins());
+			if (!plugins.exists()) {
+				plugins.mkdirs();
+			}
+			List<String> cmds = prepareSetup(plugins, cfg, ext.getSetup(), type, config);
 			setCommandLine(cmds);
 			setWorkingDir(new File(ext.getSetup(), type));
 			super.exec();
@@ -43,9 +52,13 @@ public abstract class AbstractStart extends Exec {
 	}
 
 	private JSONObject getConfiguration(EcgineExtension ext, String type) throws IOException {
-		File config = new File(ext.getPlugins(), ".config");
+		File plugins = new File(ext.getPlugins());
+		if (!plugins.exists()) {
+			plugins.mkdirs();
+		}
+		File config = new File(plugins, ".config");
 		if (!config.exists()) {
-			downloadConfigFile(ext, config);
+			downloadConfigFile(ext, config, ext.getConfigUrl());
 		}
 		getLogger().debug("loading .config file->" + config.getAbsolutePath());
 		String string = new String(Files.readAllBytes(config.toPath()));
@@ -56,22 +69,26 @@ public abstract class AbstractStart extends Exec {
 		JSONArray devBundles = new JSONArray();
 		Set<String> notFound = new HashSet<>();
 		getLogger().debug("adding developer bundles");
-		EcgineUtils.forEachProject(getProject().getRootProject(), p -> {
+		EcgineUtils.forEachProject(getProject(), p -> {
 			EManifest manifest = EcgineUtils.readManifest(p);
+			if (manifest == null) {
+				return;
+			}
 			if (filterDevBundle(manifest)) {
 				JSONObject jar = new JSONObject();
-				jar.put("jar", manifest.getSymbolicName());
+				jar.put("jar", p.getName() + ".jar");
 				jar.put("start", 5);
 				devBundles.put(jar);
-				if (!EcgineUtils.copyProjectJar(manifest, ext.getPlugins())) {
+				File sourceJar = new File(p.getRootProject().getBuildDir(), jar.getString("jar"));
+				if (!EcgineUtils.copy(sourceJar, new File(plugins, jar.getString("jar")))) {
 					notFound.add(manifest.getSymbolicName());
 				}
 				testBundles.append(manifest.getSymbolicName()).append(",");
 			}
 		});
 		if (!notFound.isEmpty()) {
-			getLogger().error("following jars are not found");
-			getLogger().error("run build task");
+			System.err.println("following jars are not found");
+			System.err.println("run build task");
 			notFound.forEach(j -> getLogger().error(j));
 			throw new RuntimeException();
 		}
@@ -89,11 +106,10 @@ public abstract class AbstractStart extends Exec {
 
 	protected abstract boolean filterDevBundle(EManifest manifest);
 
-	private void downloadConfigFile(EcgineExtension ext, File config) {
-		getLogger().info(".config file not found->" + config.getAbsolutePath());
+	protected void downloadConfigFile(EcgineExtension ext, File file, String url) {
+		System.out.println(file.getName() + " file not found->" + file.getAbsolutePath());
 		try {
-			String url = ext.getConfigUrl();
-			getLogger().info("Downloading config file->" + url);
+			System.out.println("Downloading " + file.getName() + " file->" + url);
 			HttpPost request = new HttpPost(url);
 			request.addHeader("apikey", ext.getApiKey());
 			JSONArray array = new JSONArray();
@@ -102,25 +118,31 @@ public abstract class AbstractStart extends Exec {
 			int code = response.getStatusLine().getStatusCode();
 			if (code != 200) {
 				EntityUtils.consume(response.getEntity());
-				getLogger().info("StatusCode:" + code + " URL:" + url);
-				throw new GradleException("Unable to connect:" + url);
+				if (code == 401) {
+					throw new GradleException("Invalid api key");
+				} else {
+					throw new GradleException("StatusCode:" + code + " URL:" + url);
+				}
 			}
-			IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(config));
+			System.out.println("Got " + file.getName() + " file.");
+			IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(file));
 		} catch (Exception e) {
 			throw new GradleException("", e);
 		}
 	}
 
-	private List<String> prepareSetup(File plugins, Configuration con, File setup, String type, JSONObject config)
+	private List<String> prepareSetup(File plugins, Configuration con, String setup, String type, JSONObject config)
 			throws IOException {
 		File root = new File(setup, type);
-		if (!root.exists()) {
-			root.mkdirs();
+		if (root.exists()) {
+			FileUtils.deleteDirectory(root);
 		}
+		root.mkdirs();
+
 		Map<String, String> configProps = new HashMap<>();
 
 		// copy all bundles(jars)
-		String bundles = copyAllJars(plugins, root, config.getJSONObject("bundles"));
+		String bundles = copyAllJars(plugins, root, config.getJSONObject("bundles"), true);
 		configProps.put("osgi.bundles", bundles);
 
 		copyHomeJars(plugins, root, config.getJSONArray("home"));
@@ -186,15 +208,15 @@ public abstract class AbstractStart extends Exec {
 		});
 
 		if (!notFound.isEmpty()) {
-			getLogger().error("following jars are not found in :" + plugins.getAbsolutePath());
-			getLogger().error("run bundles task");
+			System.err.println("following jars are not found in :" + plugins);
+			System.err.println("run bundles task");
 			notFound.forEach(j -> getLogger().error(j));
 			throw new RuntimeException();
 		}
 	}
 
-	private String copyAllJars(File plugins, File root, JSONObject bundles) {
-		getLogger().debug("Copy all jars from:" + plugins.getAbsolutePath() + " to setup folder");
+	private String copyAllJars(File plugins, File root, JSONObject bundles, boolean needDownload) {
+		getLogger().debug("Copy all jars from:" + plugins + " to setup folder");
 		Set<String> notFound = new HashSet<>();
 		StringBuilder property = new StringBuilder();
 		bundles.keySet().forEach(k -> {
@@ -222,13 +244,27 @@ public abstract class AbstractStart extends Exec {
 				property.append(",");
 			});
 		});
+
+		if (needDownload && !notFound.isEmpty()) {
+			EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
+			HttpClient client = HttpClientBuilder.create().build();
+			notFound.forEach(n -> {
+				String[] split = n.split("_");
+				String version = split[split.length - 1];
+				n = n.replaceFirst("_" + version, "");
+				version = version.replaceFirst(".jar", "");
+				EcgineBundlesTask.downloadBundle(ext, client, n, version);
+			});
+			return copyAllJars(plugins, root, bundles, false);
+		}
+
 		if (notFound.isEmpty()) {
 			property.subSequence(0, property.length() - 2);
 			return property.toString();
 		}
 
-		getLogger().error("following jars are not found in :" + plugins.getAbsolutePath());
-		getLogger().error("run bundles task");
+		System.err.println("following jars are not found in :" + plugins);
+		System.err.println("run bundles task");
 		notFound.forEach(j -> getLogger().error(j));
 		throw new RuntimeException();
 	}

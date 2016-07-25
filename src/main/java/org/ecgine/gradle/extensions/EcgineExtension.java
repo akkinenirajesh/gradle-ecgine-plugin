@@ -1,6 +1,5 @@
 package org.ecgine.gradle.extensions;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,6 +12,7 @@ public class EcgineExtension {
 	private static final String BUNDLE_DOWNLOAD = "/api/download/bundle";
 	private static final String DEPENDENCY = "/api/dependencies";
 	private static final String CONFIG = "/api/config";
+	private static final String ECGINE_START = "/api/ecginestart";
 
 	public static final String NAME = "ecgine";
 
@@ -26,20 +26,17 @@ public class EcgineExtension {
 	/**
 	 * This directory is used store all downloaded bundles
 	 */
-	private File plugins = new File("plugins");
+	private String plugins = "plugins";
 
-	private File setup;
+	private String setup;
 
 	private Map<String, String> bundles = new HashMap<>();
 
-	public File getPlugins() {
-		if (!plugins.exists()) {
-			plugins.mkdirs();
-		}
+	public String getPlugins() {
 		return plugins;
 	}
 
-	public void setPlugins(File destDir) {
+	public void setPlugins(String destDir) {
 		this.plugins = destDir;
 	}
 
@@ -68,16 +65,13 @@ public class EcgineExtension {
 		return bundles;
 	}
 
-	public void setup(File setup) {
+	public void setup(String setup) {
 		this.setup = setup;
 	}
 
-	public File getSetup() {
+	public String getSetup() {
 		if (setup == null) {
-			setup = new File(System.getProperty("user.home"), ".ecgine/setup");
-		}
-		if (!setup.exists()) {
-			setup.mkdirs();
+			setup = System.getProperty("user.home") + "/.ecgine/setup";
 		}
 		return setup;
 	}
@@ -103,6 +97,14 @@ public class EcgineExtension {
 		b.append(getUrl());
 		b.append(MASTER_BUNDLE);
 		b.append(CONFIG);
+		return b.toString();
+	}
+
+	public String getEcgineStartUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(ECGINE_START);
 		return b.toString();
 	}
 }

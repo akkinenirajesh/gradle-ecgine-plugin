@@ -56,7 +56,6 @@ public class EcgineBundlesTask extends DefaultTask {
 		if (!notFoundJars.isEmpty()) {
 			throw new GradleException();
 		}
-		throw new GradleException();
 	}
 
 	private boolean prepareJarDependencies(EcgineExtension ext, HttpClient client, Map<String, JSONObject> allDepends,
@@ -82,7 +81,7 @@ public class EcgineBundlesTask extends DefaultTask {
 			result.keySet().forEach(e -> {
 				JSONObject jar = result.getJSONObject(e);
 				if (!jar.has("version")) {
-					getLogger().error("Bundle not found:" + e);
+					System.err.println("Bundle not found:" + e);
 				}
 				depends.put(e, jar);
 			});
@@ -116,7 +115,7 @@ public class EcgineBundlesTask extends DefaultTask {
 			Map<String, String> notExisting) {
 		try {
 			String url = ext.getDependenciesUrl();
-			getLogger().info("Downloading dependencies: " + url);
+			System.out.println("Downloading dependencies: " + url);
 			HttpPost request = new HttpPost(url);
 			request.addHeader("apikey", ext.getApiKey());
 			JSONObject obj = new JSONObject();
@@ -126,25 +125,33 @@ public class EcgineBundlesTask extends DefaultTask {
 			int code = response.getStatusLine().getStatusCode();
 			if (code != 200) {
 				EntityUtils.consume(response.getEntity());
-				throw new GradleException("StatusCode:" + code + " URL:" + url);
+				if (code == 401) {
+					throw new GradleException("Invalid api key");
+				} else {
+					throw new GradleException("StatusCode:" + code + " URL:" + url);
+				}
 			}
 			String json = EntityUtils.toString(response.getEntity());
 			JSONObject result = new JSONObject(json);
-			getLogger().info("Got dependencies");
+			System.out.println("Got dependencies");
 			return result;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private File downloadBundle(EcgineExtension ext, HttpClient client, String name, String version) {
-		File jar = new File(ext.getPlugins(), name + "_" + version + ".jar");
+	public static File downloadBundle(EcgineExtension ext, HttpClient client, String name, String version) {
+		File plugins = new File(ext.getPlugins());
+		if (!plugins.exists()) {
+			plugins.mkdirs();
+		}
+		File jar = new File(plugins, name + "_" + version + ".jar");
 		if (jar.exists()) {
 			return jar;
 		}
 
 		try {
-			getLogger().info("Downloading bundle " + jar.getName());
+			System.out.println("Downloading bundle " + jar.getName());
 			String url = ext.getDownloadUrl();
 			HttpPost request = new HttpPost(url);
 			request.addHeader("apikey", ext.getApiKey());
@@ -158,7 +165,11 @@ public class EcgineBundlesTask extends DefaultTask {
 				IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(jar));
 			} else {
 				EntityUtils.consume(response.getEntity());
-				getLogger().error("Bundle not found in ecgine repository " + jar.getName());
+				if (code == 401) {
+					throw new GradleException("Invalid api key");
+				} else {
+					System.err.println("Bundle not found in ecgine repository " + jar.getName());
+				}
 			}
 		} catch (Exception e) {
 			throw new GradleException("", e);
