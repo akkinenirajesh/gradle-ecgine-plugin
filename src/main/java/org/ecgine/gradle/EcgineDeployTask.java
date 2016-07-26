@@ -1,10 +1,9 @@
 package org.ecgine.gradle;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -31,7 +30,6 @@ import org.gradle.api.tasks.TaskAction;
 import org.json.JSONObject;
 
 import com.amazonaws.util.json.JSONArray;
-import com.sun.xml.internal.ws.api.message.Attachment;
 
 /**
  *
@@ -43,7 +41,7 @@ import com.sun.xml.internal.ws.api.message.Attachment;
  */
 public class EcgineDeployTask extends DefaultTask {
 
-	private static final String VERSION_NAME = "versionName";
+	private static final String VERSION = "versionName";
 	private static final String PACKAGE_NAME_SPACE = "namespace";
 	private static final String NAME = "name";
 	private static final String CATEGORY = "category";
@@ -56,7 +54,7 @@ public class EcgineDeployTask extends DefaultTask {
 	private static final int FAILED = 3;
 
 	@TaskAction
-	public void deploy() {
+	public void deploy() throws Exception {
 
 		HttpClient client = HttpClientBuilder.create().build();
 
@@ -66,150 +64,102 @@ public class EcgineDeployTask extends DefaultTask {
 
 		Set<EManifest> projects = EcgineUtils.getAllProjects(getProject(), m -> true);
 
-		projects.forEach(project -> createEbundle(client, ext, project));
+		Set<Bundle> bundles = EcgineUtils.getBundles(projects, getProject());
 
-		Map<String, String> dependencies = EcgineUtils.getDependencies(projects);
-		projects.forEach(eManifest -> dependencies.put(eManifest.getSymbolicName(), eManifest.getVersion()));
+		projects.forEach(m -> {
+			try {
+				createEbundle(client, ext, m);
+			} catch (Exception e) {
+				throw new GradleException(e.getMessage(), e);
+			}
+			bundles.add(new Bundle(m.getSymbolicName(), m.getVersion(), m.getEcgineBundleType()));
+		});
 
-		createPackageVersion(client, ext, pak, dependencies);
+		createPackageVersion(client, ext, pak, bundles);
 
 	}
 
-	public String uploadFile() {
-		HttpPost post = new HttpPost("");
+	private void createEbundle(HttpClient client, EcgineExtension ext, EManifest p) throws Exception {
+		HttpPost post = new HttpPost(ext.getUploadBundleUrl());
+		post.addHeader("apikey", ext.getApiKey());
 		post.removeHeaders("content-type");
 		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
 		builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+		File file = p.getJar();
 		builder.addBinaryBody("upfile", file, ContentType.DEFAULT_BINARY, file.getName());
-		builder.addPart("info", new StringBody(getJson().toString(), ContentType.APPLICATION_JSON));
-		HttpEntity build = builder.build();
-		entityWraper = new ProgressHttpEntityWrapper(build, calbak);
-		post.setEntity(entityWraper);
-		HttpResponse response = null;
-		try {
-			response = WSUtils.postRequest(post, httpClient);
-		} catch (BundlesNotActivatedException e) {
-			throw new AuthenticationFailedException(e.getMessage());
-		}
+		JSONObject json = new JSONObject();
+		json.put("multiple", false);
+		builder.addPart("info", new StringBody(json.toString(), ContentType.APPLICATION_JSON));
+		post.setEntity(builder.build());
+		HttpResponse response = client.execute(post);
 		StatusLine status = response.getStatusLine();
-		if (status.getStatusCode() != HttpStatus.SC_OK) {
-			throw new AuthenticationFailedException(status.getReasonPhrase());
-		}
 		HttpEntity entity = response.getEntity();
-		String responseContent = IOUtils.toString(entity.getContent());
-		JSONObject responseResult = new JSONObject(responseContent);
-		JSONArray jsonArray = responseResult.getJSONArray("files");
-		JSONObject obj = (JSONObject) jsonArray.get(0);
-		String attId = obj.getString(ATTACHMENT_ID);
-		String name = obj.getString(ATTACHMENT_NAME);
-		int refcount = obj.getInt(ATTACHMENT_REFCOUNT);
-		long size = obj.getLong(ATTACHMENT_SIZE);
-		// database id
-		long id = obj.getLong(SAVED_ATTACHEMENT_ID);
-		Attachment att = new Attachment(UUID.fromString(attId), name, refcount);
-		att.setId(id);
-		att.setSize(size);
-		return att;
-	}
-
-	private void createEbundle(HttpClient client, EcgineExtension ext, EManifest p) {
-
-		uploadFile();
-		
-		try {
-			HttpPost request = new HttpPost(EcgineUtils.getCreateEbundleUrl());
-			request.addHeader("apikey", ext.getApiKey());
-			List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-			// TODO
-			request.setEntity(new UrlEncodedFormEntity(urlParameters));
-			HttpResponse response = client.execute(request);
-			int code = response.getStatusLine().getStatusCode();
-			if (code == HttpStatus.SC_OK) {
-			} else {
-				EntityUtils.consume(response.getEntity());
-			}
-		} catch (Exception e) {
-			throw new GradleException("", e);
+		EntityUtils.consume(entity);
+		if (status.getStatusCode() != HttpStatus.SC_OK) {
+			throw new GradleException("StatusCode:" + status.getStatusCode() + " URL:" + ext.getUploadBundleUrl());
 		}
 	}
 
-	private void createPackageVersion(HttpClient client, EcgineExtension ext, Package ePackage,
-			Map<String, String> dependencies) {
-		try {
-			HttpPost request = new HttpPost(EcgineUtils.getCreatePackageVersionUrl());
-			request.addHeader("apikey", ext.getApiKey());
-			// preparing body
-			JSONObject body = new JSONObject();
-			body.put(PACKAGE_NAME_SPACE, ePackage.getNamespace());
-			body.put(VERSION_NAME, ePackage.getVersionName());
-			JSONArray bundles = new JSONArray();
-			body.put(BUNDLES, bundles);
-			dependencies.forEach((k, v) -> {
-				JSONObject bundle = new JSONObject();
-				bundle.put(PACKAGE_NAME_SPACE, ePackage.getNamespace());
-				bundle.put(VERSION_NAME, ePackage.getVersionName());
-				bundle.put(BUNLDE_TYPE, getBundleType(k, v));
-				bundles.put(bundle);
-			});
-			request.setEntity(new StringEntity(body.toString()));
-			HttpResponse response = client.execute(request);
+	private void createPackageVersion(HttpClient client, EcgineExtension ext, Package pkg, Set<Bundle> bundles)
+			throws Exception {
+		HttpPost request = new HttpPost(ext.getCreatePackageVersionUrl());
+		request.addHeader("apikey", ext.getApiKey());
+		// preparing body
+		JSONObject body = new JSONObject();
+		body.put(PACKAGE_NAME_SPACE, pkg.getNamespace());
+		body.put(VERSION, pkg.getVersionName());
+		JSONArray bundlesArray = new JSONArray();
+		body.put(BUNDLES, bundlesArray);
+		bundles.forEach(b -> {
+			JSONObject bundle = new JSONObject();
+			bundle.put(NAME, b.getName());
+			bundle.put(VERSION, b.getVersion());
+			bundle.put(BUNLDE_TYPE, b.getType());
+			bundlesArray.put(bundle);
+		});
+		request.setEntity(new StringEntity(body.toString()));
+		HttpResponse response = client.execute(request);
 
-			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-				System.out.println("Failed to created Package version");
-				EntityUtils.consume(response.getEntity());
-				return;
-			}
+		if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+			EntityUtils.consume(response.getEntity());
+			throw new GradleException("StatusCode:" + response.getStatusLine().getStatusCode() + " URL:"
+					+ ext.getCreatePackageVersionUrl());
+		}
 
-			JSONObject result = new JSONObject(IOUtils.toString(response.getEntity().getContent()));
-			switch (result.getInt("code")) {
-			case SUCESS:
-				System.out.println(result.getString("message"));
-				break;
-			case PACKAGE_NOT_FOUND:
-				System.out.println(result.getString("message"));
-				createPackage(client, ext, ePackage, dependencies);
-				break;
-			case FAILED:
-				System.out.println(result.getString("message"));
-				break;
-			}
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			throw new GradleException("", e);
+		JSONObject result = new JSONObject(IOUtils.toString(response.getEntity().getContent()));
+		switch (result.getInt("code")) {
+		case PACKAGE_NOT_FOUND:
+			createPackage(client, ext, pkg);
+			createPackageVersion(client, ext, pkg, bundles);
+			break;
+		case FAILED:
+			System.err.println("Unable to create PackageVersion");
+			System.err.println(result.getString("message"));
+			break;
+		case SUCESS:
 		}
 	}
 
-	private String getBundleType(String name, String version) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	private void createPackage(HttpClient client, EcgineExtension ext, Package ePackage,
-			Map<String, String> dependencies) {
-		try {
-			HttpPost request = new HttpPost(EcgineUtils.getCreatePackageUrl());
-			request.addHeader("apikey", ext.getApiKey());
-			List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-			urlParameters.add(new BasicNameValuePair(NAME, ePackage.getName()));
-			urlParameters.add(new BasicNameValuePair(PACKAGE_NAME_SPACE, ePackage.getNamespace()));
-			urlParameters.add(new BasicNameValuePair(CATEGORY, ePackage.getCategory()));
-			urlParameters.add(new BasicNameValuePair(VERTICALS, ePackage.getVerticals()));
-			request.setEntity(new UrlEncodedFormEntity(urlParameters));
-			HttpResponse response = client.execute(request);
-			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-				EntityUtils.consume(response.getEntity());
-				return;
-			}
-			JSONObject result = new JSONObject(IOUtils.toString(response.getEntity().getContent()));
-			if (result.getInt("code") == SUCESS) {
-				System.out.println(result.getString("message"));
-				System.out.println("Creating Package version");
-				createPackageVersion(client, ext, ePackage, dependencies);
-			} else {
-				System.out.println(result.getString("message"));
-			}
-		} catch (Exception e) {
-			throw new GradleException("", e);
+	private void createPackage(HttpClient client, EcgineExtension ext, Package ePackage) throws Exception {
+		System.out.println("Creating Package...");
+		HttpPost request = new HttpPost(ext.getCreatePackageUrl());
+		request.addHeader("apikey", ext.getApiKey());
+		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+		urlParameters.add(new BasicNameValuePair(NAME, ePackage.getName()));
+		urlParameters.add(new BasicNameValuePair(PACKAGE_NAME_SPACE, ePackage.getNamespace()));
+		urlParameters.add(new BasicNameValuePair(CATEGORY, ePackage.getCategory()));
+		urlParameters.add(new BasicNameValuePair(VERTICALS, ePackage.getVerticals()));
+		request.setEntity(new UrlEncodedFormEntity(urlParameters));
+		HttpResponse response = client.execute(request);
+		if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+			EntityUtils.consume(response.getEntity());
+			throw new GradleException(
+					"StatusCode:" + response.getStatusLine().getStatusCode() + " URL:" + ext.getCreatePackageUrl());
+		}
+		JSONObject result = new JSONObject(IOUtils.toString(response.getEntity().getContent()));
+		if (result.getInt("code") != SUCESS) {
+			System.err.println("Unable to create package");
+			throw new GradleException(result.getString("message"));
 		}
 	}
 }

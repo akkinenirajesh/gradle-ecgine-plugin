@@ -121,15 +121,14 @@ public abstract class AbstractStart extends Exec {
 			devBundlesArray.put(obj);
 		});
 
-		File build = getProject().getRootProject().getBuildDir();
 		devBundles.forEach(m -> {
 			testBundles.append(m.getSymbolicName()).append(",");
-			String jar = m.getProject().getName() + ".jar";
+			File jar = m.getJar();
 			JSONObject obj = new JSONObject();
 			obj.put("jar", jar);
 			obj.put("start", 5);
 			devBundlesArray.put(obj);
-			if (!EcgineUtils.copy(new File(build, jar), new File(plugins, jar))) {
+			if (!EcgineUtils.copy(jar, new File(plugins, jar.getName()))) {
 				notFound.add(m.getSymbolicName());
 			}
 		});

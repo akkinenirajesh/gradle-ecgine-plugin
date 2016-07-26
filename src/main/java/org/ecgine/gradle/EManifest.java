@@ -80,4 +80,8 @@ public class EManifest {
 		// TODO Auto-generated method stub
 	}
 
+	public File getJar() {
+		return new File(getProject().getRootProject().getBuildDir(), project.getName() + ".jar");
+	}
+
 }

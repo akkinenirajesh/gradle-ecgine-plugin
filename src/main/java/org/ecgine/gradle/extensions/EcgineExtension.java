@@ -13,6 +13,9 @@ public class EcgineExtension {
 	private static final String DEPENDENCY = "/api/dependencies";
 	private static final String CONFIG = "/api/config";
 	private static final String ECGINE_START = "/api/ecginestart";
+	private static final String CREATE_EBUNDLE = "/api/createebundle";
+	private static final String CREATE_PACKAGE = "/api/createpackage";
+	private static final String CREATE_PACKAGE_VERSION = "/api/createpackageversion";
 
 	public static final String NAME = "ecgine";
 
@@ -105,6 +108,30 @@ public class EcgineExtension {
 		b.append(getUrl());
 		b.append(MASTER_BUNDLE);
 		b.append(ECGINE_START);
+		return b.toString();
+	}
+
+	public String getUploadBundleUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(CREATE_EBUNDLE);
+		return b.toString();
+	}
+
+	public String getCreatePackageVersionUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(CREATE_PACKAGE_VERSION);
+		return b.toString();
+	}
+
+	public String getCreatePackageUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(CREATE_PACKAGE);
 		return b.toString();
 	}
 
