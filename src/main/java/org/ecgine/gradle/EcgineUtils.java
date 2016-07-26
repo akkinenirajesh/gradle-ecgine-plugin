@@ -8,8 +8,10 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.ecgine.gradle.extensions.EcgineExtension;
 import org.gradle.api.GradleException;
@@ -108,10 +110,6 @@ public class EcgineUtils {
 		return true;
 	}
 
-	public static void forEachProject(Project root, Consumer<Project> project) {
-		root.getAllprojects().forEach(project);
-	}
-
 	public static EManifest readManifest(Project p) {
 		File file = new File(p.getProjectDir(), "META-INF/MANIFEST.MF");
 		if (file.exists()) {
@@ -119,4 +117,15 @@ public class EcgineUtils {
 		}
 		return null;
 	}
+
+	public static Set<EManifest> getAllProjects(Project project, Predicate<EManifest> test) {
+		return project.getAllprojects().stream().map(EcgineUtils::readManifest).filter(Objects::nonNull).filter(test)
+				.collect(Collectors.toSet());
+	}
+
+	public static Map<String, String> getDependencies(Set<EManifest> devBundles) {
+		// TODO Auto-generated method stub
+		return new HashMap<>();
+	}
+
 }

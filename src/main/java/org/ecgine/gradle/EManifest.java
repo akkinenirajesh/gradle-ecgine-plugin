@@ -66,4 +66,9 @@ public class EManifest {
 		return project;
 	}
 
+	@Override
+	public String toString() {
+		return symbolicName;
+	}
+
 }

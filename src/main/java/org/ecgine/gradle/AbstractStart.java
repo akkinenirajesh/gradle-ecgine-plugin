@@ -10,6 +10,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -65,43 +68,103 @@ public abstract class AbstractStart extends Exec {
 		JSONObject c = new JSONObject(string).getJSONObject(type);
 		JSONObject bundles = c.getJSONObject("bundles");
 
-		StringBuilder testBundles = new StringBuilder();
-		JSONArray devBundles = new JSONArray();
-		Set<String> notFound = new HashSet<>();
 		getLogger().debug("adding developer bundles");
-		EcgineUtils.forEachProject(getProject(), p -> {
-			EManifest manifest = EcgineUtils.readManifest(p);
-			if (manifest == null) {
+
+		Set<EManifest> devBundles = EcgineUtils.getAllProjects(getProject(), this::filterDevBundle);
+		if (getLogger().isDebugEnabled()) {
+			getLogger().debug("Dev Bundles:" + devBundles);
+		}
+
+		Map<String, String> allDependencies = EcgineUtils.getDependencies(devBundles);
+		if (getLogger().isDebugEnabled()) {
+			getLogger().debug("All dependencies:" + allDependencies);
+		}
+
+		Set<String> allJars = collectAllBundles(bundles);
+		if (getLogger().isDebugEnabled()) {
+			getLogger().debug("All ecgine jars:" + allJars);
+		}
+
+		Set<String> remainingJars = new HashSet<>();
+		StringBuilder testBundles = new StringBuilder();
+
+		// need to remove existed bundles from this list
+		allDependencies.forEach((n, v) -> {
+			String fullName = n + "_" + v + ".jar";
+			testBundles.append(n).append(",");
+			if (allJars.contains(fullName)) {
 				return;
 			}
-			if (filterDevBundle(manifest)) {
-				JSONObject jar = new JSONObject();
-				jar.put("jar", p.getName() + ".jar");
-				jar.put("start", 5);
-				devBundles.put(jar);
-				File sourceJar = new File(p.getRootProject().getBuildDir(), jar.getString("jar"));
-				if (!EcgineUtils.copy(sourceJar, new File(plugins, jar.getString("jar")))) {
-					notFound.add(manifest.getSymbolicName());
-				}
-				testBundles.append(manifest.getSymbolicName()).append(",");
-			}
+			remainingJars.add(fullName);
 		});
+		if (getLogger().isDebugEnabled()) {
+			getLogger().debug("Remaining Jars:" + remainingJars);
+		}
+
+		// Here we have to collect not found jars.
+		Set<String> notFound = remainingJars.stream().filter(f -> !new File(plugins, f).exists())
+				.collect(Collectors.toSet());
+
+		// throw exception that 'jar not found add it in dependencies'
 		if (!notFound.isEmpty()) {
-			System.err.println("following jars are not found");
-			System.err.println("run build task");
-			notFound.forEach(j -> getLogger().error(j));
+			System.err.println("following jars are not found, add these dependencies and run bundles task");
+			notFound.forEach(System.err::println);
 			throw new RuntimeException();
 		}
 
-		if (devBundles.length() != 0) {
+		// add these depends in dev-bundles with 5
+		JSONArray devBundlesArray = new JSONArray();
+		remainingJars.forEach(jar -> {
+			JSONObject obj = new JSONObject();
+			obj.put("jar", jar);
+			obj.put("start", 5);
+			devBundlesArray.put(obj);
+		});
+
+		File build = getProject().getRootProject().getBuildDir();
+		devBundles.forEach(m -> {
+			testBundles.append(m.getSymbolicName()).append(",");
+			String jar = m.getProject().getName() + ".jar";
+			JSONObject obj = new JSONObject();
+			obj.put("jar", jar);
+			obj.put("start", 5);
+			devBundlesArray.put(obj);
+			if (!EcgineUtils.copy(new File(build, jar), new File(plugins, jar))) {
+				notFound.add(m.getSymbolicName());
+			}
+		});
+
+		if (!notFound.isEmpty()) {
+			System.err.println("following jars are not found, run build task");
+			notFound.forEach(System.err::println);
+			throw new RuntimeException();
+		}
+
+		if (devBundles.size() != 0) {
 			c.getJSONObject("properties").put("ecgine.tenent.testbundles",
 					testBundles.substring(0, testBundles.length() - 1));
-			bundles.put("dev-bundles", devBundles);
+			bundles.put("dev-bundles", devBundlesArray);
 		} else {
-			getLogger().debug("No developer bundles found");
+			System.out.println("No developer bundles found");
 		}
 
 		return c;
+	}
+
+	private Set<String> collectAllBundles(JSONObject bundles) {
+		return bundles.keySet().stream()
+				// Extract each group
+				.map(bundles::getJSONArray)
+				// get each jar from each group
+				.flatMap(a -> {
+					Builder<JSONObject> b = Stream.builder();
+					a.forEach(j -> b.add((JSONObject) j));
+					return b.build();
+				})
+				// Extract jar from each JSONObject
+				.map(j -> j.getString("jar"))
+				// Collect all jars
+				.collect(Collectors.toSet());
 	}
 
 	protected abstract boolean filterDevBundle(EManifest manifest);
