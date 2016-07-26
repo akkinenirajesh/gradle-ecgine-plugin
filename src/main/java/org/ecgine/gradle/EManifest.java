@@ -63,6 +63,10 @@ public class EManifest {
 		return version;
 	}
 
+	public String getEcgineBundleType() {
+		return ecgineBundleType;
+	}
+
 	public Project getProject() {
 		return project;
 	}

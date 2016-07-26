@@ -124,15 +124,47 @@ public class EcgineUtils {
 				.collect(Collectors.toSet());
 	}
 
-	public static Map<String, String> getDependencies(Set<EManifest> devBundles, Project project) {
-		Map<String, String> result = new HashMap<>();
-		Map<String, JSONObject> dependencies = readJarDependencies(project);
-		devBundles.forEach(m -> m.foreachRequiredBundle((n, v) -> addDependencies(n, v, result, dependencies)));
+	public static Set<Bundle> getBundles(Set<EManifest> allProjects, Project project) {
+		Map<String, Set<EManifest>> collect = allProjects.stream()
+				.collect(Collectors.groupingBy(m -> m.getEcgineBundleType(), Collectors.toSet()));
+
+		Set<EManifest> server = collect.get("server");
+		Set<EManifest> shared = collect.get("shared");
+		Set<EManifest> client = collect.get("client");
+
+		Predicate<String> skip = s -> allProjects.stream().anyMatch(m -> m.getSymbolicName().equals(s));
+
+		Map<String, String> serverDepends = getDependencies(server, skip, project);
+		Map<String, String> sharedDepends = getDependencies(shared, skip, project);
+		Map<String, String> clientDepends = getDependencies(client, skip, project);
+
+		sharedDepends.forEach((k, v) -> clientDepends.remove(k));
+		sharedDepends.forEach((k, v) -> serverDepends.remove(k));
+		serverDepends.forEach((k, v) -> clientDepends.remove(k));
+		clientDepends.forEach((k, v) -> serverDepends.remove(k));
+
+		Set<Bundle> result = new HashSet<>();
+		// Now we have unique bundles
+		serverDepends.forEach((k, v) -> result.add(new Bundle(k, v, "server")));
+		sharedDepends.forEach((k, v) -> result.add(new Bundle(k, v, "shared")));
+		clientDepends.forEach((k, v) -> result.add(new Bundle(k, v, "client")));
+
 		return result;
 	}
 
-	private static void addDependencies(String n, String v, Map<String, String> result,
+	public static Map<String, String> getDependencies(Set<EManifest> devBundles, Predicate<String> skip,
+			Project project) {
+		Map<String, String> result = new HashMap<>();
+		Map<String, JSONObject> dependencies = readJarDependencies(project);
+		devBundles.forEach(m -> m.foreachRequiredBundle((n, v) -> addDependencies(n, v, skip, result, dependencies)));
+		return result;
+	}
+
+	private static void addDependencies(String n, String v, Predicate<String> skip, Map<String, String> result,
 			Map<String, JSONObject> dependencies) {
+		if (skip.test(n)) {
+			return;
+		}
 		JSONObject json = dependencies.get(n);
 		if (json == null) {
 			return;
@@ -149,7 +181,7 @@ public class EcgineUtils {
 
 		JSONArray array = json.getJSONArray("dependents");
 		array.forEach(a -> {
-			addDependencies(a.toString(), null, result, dependencies);
+			addDependencies(a.toString(), null, skip, result, dependencies);
 		});
 	}
 
