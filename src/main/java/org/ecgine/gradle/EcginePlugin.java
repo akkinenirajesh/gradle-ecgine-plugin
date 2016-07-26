@@ -110,7 +110,7 @@ public class EcginePlugin implements Plugin<Project> {
 			plugins.mkdirs();
 		}
 		Map<String, String> dependencies = root.getBundles();
-		Map<String, JSONObject> jarDepends = EcgineUtils.readJarDependencies(c.getLogger(), project.getRootProject());
+		Map<String, JSONObject> jarDepends = EcgineUtils.readJarDependencies(project.getRootProject());
 
 		Set<String> allJarNames = new HashSet<>();
 		dependencies.forEach((k, v) -> {
@@ -145,6 +145,7 @@ public class EcginePlugin implements Plugin<Project> {
 			allJarNames.add(k + "_" + json.getString("version"));
 			existedNames.add(k);
 		}
+
 		JSONArray array = json.getJSONArray("dependents");
 		array.forEach(a -> {
 			JSONObject obj = jarDepends.get(a.toString());

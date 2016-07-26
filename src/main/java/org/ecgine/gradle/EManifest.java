@@ -3,6 +3,7 @@ package org.ecgine.gradle;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.function.BiConsumer;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -69,6 +70,10 @@ public class EManifest {
 	@Override
 	public String toString() {
 		return symbolicName;
+	}
+
+	public void foreachRequiredBundle(BiConsumer<String, String> requiredBundle) {
+		// TODO Auto-generated method stub
 	}
 
 }

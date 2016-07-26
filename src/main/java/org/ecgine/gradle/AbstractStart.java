@@ -75,7 +75,7 @@ public abstract class AbstractStart extends Exec {
 			getLogger().debug("Dev Bundles:" + devBundles);
 		}
 
-		Map<String, String> allDependencies = EcgineUtils.getDependencies(devBundles);
+		Map<String, String> allDependencies = EcgineUtils.getDependencies(devBundles, getProject());
 		if (getLogger().isDebugEnabled()) {
 			getLogger().debug("All dependencies:" + allDependencies);
 		}

@@ -17,13 +17,14 @@ import org.ecgine.gradle.extensions.EcgineExtension;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class EcgineUtils {
-	public static Map<String, JSONObject> readJarDependencies(Logger logger, Project project) {
+	public static Map<String, JSONObject> readJarDependencies(Project project) {
 		File ecgine = getDependenciesFile(project);
 		if (!ecgine.exists()) {
-			logger.debug(".ecgine not found:" + ecgine.getAbsolutePath());
+			project.getLogger().debug(".ecgine not found:" + ecgine.getAbsolutePath());
 			return new HashMap<>();
 		}
 
@@ -123,9 +124,33 @@ public class EcgineUtils {
 				.collect(Collectors.toSet());
 	}
 
-	public static Map<String, String> getDependencies(Set<EManifest> devBundles) {
-		// TODO Auto-generated method stub
-		return new HashMap<>();
+	public static Map<String, String> getDependencies(Set<EManifest> devBundles, Project project) {
+		Map<String, String> result = new HashMap<>();
+		Map<String, JSONObject> dependencies = readJarDependencies(project);
+		devBundles.forEach(m -> m.foreachRequiredBundle((n, v) -> addDependencies(n, v, result, dependencies)));
+		return result;
+	}
+
+	private static void addDependencies(String n, String v, Map<String, String> result,
+			Map<String, JSONObject> dependencies) {
+		JSONObject json = dependencies.get(n);
+		if (json == null) {
+			return;
+		}
+
+		if (!json.has("version")) {
+			return;
+		}
+
+		String version = json.getString("specifiedVersion");
+		if (v != null && !version.equals(v)) {
+			return;
+		}
+
+		JSONArray array = json.getJSONArray("dependents");
+		array.forEach(a -> {
+			addDependencies(a.toString(), null, result, dependencies);
+		});
 	}
 
 }
