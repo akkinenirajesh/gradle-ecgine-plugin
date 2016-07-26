@@ -2,12 +2,16 @@ package org.ecgine.gradle;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
 import org.ecgine.gradle.extensions.Configuration;
 import org.ecgine.gradle.extensions.EcgineExtension;
 import org.ecgine.gradle.extensions.Master;
@@ -16,11 +20,16 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.file.copy.CopySpecInternal;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.osgi.OsgiPlugin;
 import org.gradle.api.tasks.bundling.Jar;
-import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.xtend.gradle.XtendPlugin;
+import org.xtend.gradle.tasks.XtendCompile;
 
 /**
  *
@@ -37,48 +46,126 @@ public class EcginePlugin implements Plugin<Project> {
 		project.getPlugins().apply(JavaPlugin.class);
 		project.getPlugins().apply(EclipsePlugin.class);
 		project.getPlugins().apply(OsgiPlugin.class);
+		project.getPlugins().apply(XtendPlugin.class);
 
 		// Add the install task to this project.
 		// project.tasks.create(ReactInstallTask.NAME, ReactInstallTask.class )
 
 		// replace the jar task to this project.
-		// project.getTasks().remove(project.getTasks().getByName("jar"));
-		project.getTasks().getByName("jar").doFirst(this::jar);
+		if (project.getRootProject() == project) {
+			project.getTasks().create("bundles", EcgineBundlesTask.class);
+			project.getTasks().create("ecgineClientStart", EcgineClientStart.class);
+			project.getTasks().create("ecgineServerStart", EcgineServerStart.class);
 
-		project.getTasks().getByName("compileJava").doFirst(this::compileJava);
+			project.getExtensions().create(EcgineExtension.NAME, EcgineExtension.class);
+			project.getExtensions().create("server", Configuration.class, 4000, 2502, "64m", "1g");
+			project.getExtensions().create("client", Configuration.class, 8000, 2501, "64m", "1g");
+			project.getExtensions().create("master", Master.class);
+			project.getTasks().remove(project.getTasks().getByName("build"));
+		} else {
+			project.getTasks().getByName("jar").doFirst(this::jar);
+			project.getTasks().getByName("compileXtend").doFirst(this::compileXtend);
+			project.getTasks().getByName("compileJava").doFirst(this::compileJava);
+		}
+	}
 
-		project.getTasks().create("bundles", EcgineBundlesTask.class);
+	private void compileXtend(Task t) {
 
-		project.getTasks().create("ecgineClientStart", EcgineClientStart.class);
+		XtendCompile c = (XtendCompile) t;
 
-		project.getTasks().create("ecgineServerStart", EcgineServerStart.class);
+		List<File> existed = new ArrayList<>();
 
-		// adding the task to the extra properties makes it available as task
-		// type in this project.
-		// addGlobalTaskType(JSXTask.class)
+		// Existing jars
+		c.getXtendClasspath().forEach(existed::add);
+		c.getClasspath().forEach(existed::add);
 
-		// create the extension to configure the tasks
-		project.getExtensions().create(EcgineExtension.NAME, EcgineExtension.class);
-		project.getExtensions().create("server", Configuration.class, 4000, 2502, "64m", "1g");
-		project.getExtensions().create("client", Configuration.class, 8000, 2501, "64m", "1g");
-		project.getExtensions().create("master", Master.class);
+		List<File> collect = collectAllJars(t, existed);
+		collect.sort((f1, f2) -> f1.getName().compareTo(f2.getName()));
+		FileCollection allJars = project.files(collect);
+
+		c.setClasspath(allJars);
 	}
 
 	private void compileJava(Task t) {
 
-		JavaCompile c = (JavaCompile) t;
-		EcgineExtension ext = (EcgineExtension) project.getExtensions().getByName("ecgine");
+		AbstractCompile c = (AbstractCompile) t;
 
-		Map<String, String> dependencies = ext.getBundles();
-		Map<String, String> jarDepends = EcgineUtils.readJarDependencies(c.getLogger(), project);
-		Set<String> allJarNames = EcgineUtils.combineAllJars(c.getLogger(), jarDepends, dependencies);
-
-		FileCollection allJars = project.files(allJarNames.stream().map(s -> new File(s + ".jar")).toArray());
-
+		List<File> existed = new ArrayList<>();
 		// Existing jars
-		allJars.plus(c.getClasspath());
+		c.getClasspath().forEach(existed::add);
+
+		List<File> collect = collectAllJars(t, existed);
+		FileCollection allJars = project.files(collect);
 
 		c.setClasspath(allJars);
+	}
+
+	private List<File> collectAllJars(Task c, List<File> existed) {
+		Set<String> existedNames = new HashSet<>();
+		List<File> all = new ArrayList<>();
+
+		EcgineExtension root = (EcgineExtension) project.getRootProject().getExtensions().getByName("ecgine");
+		File plugins = new File(project.getRootDir(), root.getPlugins());
+		if (!plugins.exists()) {
+			plugins.mkdirs();
+		}
+		Map<String, String> dependencies = root.getBundles();
+		Map<String, JSONObject> jarDepends = EcgineUtils.readJarDependencies(c.getLogger(), project.getRootProject());
+
+		Set<String> allJarNames = new HashSet<>();
+		dependencies.forEach((k, v) -> {
+			JSONObject json = jarDepends.get(k);
+			if (json == null) {
+				return;
+			}
+			if (!json.getString("specifiedVersion").equals(v)) {
+				return;
+			}
+			if (!json.has("version")) {
+				return;
+			}
+			addDependencies(jarDepends, allJarNames, existedNames, k, json);
+		});
+		allJarNames.stream().map(s -> new File(plugins, s + ".jar")).filter(f -> f.exists())
+				.collect(Collectors.toCollection(() -> all));
+
+		existed.stream().filter(f -> !existedNames.contains(f.getName().split("-")[0])).forEach(all::add);
+
+		return all;
+	}
+
+	private void addDependencies(Map<String, JSONObject> jarDepends, Set<String> allJarNames, Set<String> existedNames,
+			String k, JSONObject json) {
+		if (!json.has("version")) {
+			return;
+		}
+
+		// Exists, add all dependencies
+		if (!existedNames.contains(k)) {
+			allJarNames.add(k + "_" + json.getString("version"));
+			existedNames.add(k);
+		}
+		JSONArray array = json.getJSONArray("dependents");
+		array.forEach(a -> {
+			JSONObject obj = jarDepends.get(a.toString());
+			addDependencies(jarDepends, allJarNames, existedNames, a.toString(), obj);
+		});
+	}
+
+	private final class Holder<T> {
+		private T val;
+
+		private Holder(T init) {
+			val = init;
+		}
+
+		public T getVal() {
+			return val;
+		}
+
+		public void setVal(T val) {
+			this.val = val;
+		}
 	}
 
 	private void jar(Task t) {
@@ -87,15 +174,46 @@ public class EcginePlugin implements Plugin<Project> {
 			throw new GradleException("Can not create jar, 'build.properties' file is missing in project folder.");
 		}
 		Jar jar = (Jar) t;
-		jar.getManifest().from("META-INF/MANIFEST.MF");
+		Holder<Boolean> manifestExculde = new Holder<Boolean>(false);
 
-		Properties props = new Properties();
+		// We need to exclude existing manifest
+		Iterator<CopySpecInternal> it = jar.getRootSpec().getChildren().iterator();
+		it.hasNext();
+		it.next().eachFile(f -> {
+			// Need to skip first manifest(system)
+			if (!manifestExculde.getVal()) {
+				manifestExculde.setVal(true);
+				f.exclude();
+			}
+		});
+
+		jar.getMetaInf().from(new File("./META-INF/MANIFEST.MF"));
 		try {
+			Properties props = new Properties();
 			props.load(new FileReader(propsFile));
-		} catch (IOException e) {
+			String includes = props.getProperty("bin.includes");
+			String[] files = includes.split(",");
+			File ecg = new File(project.getProjectDir(), "build/ecg");
+			ecg.mkdirs();
+			for (String s : files) {
+				if (s.equals(".")) {
+					continue;
+				}
+				File f = new File(project.getProjectDir(), s);
+				File d = new File(ecg, s);
+				if (f.isDirectory()) {
+					FileUtils.copyDirectory(f, d);
+				} else {
+					FileUtils.copyFile(f, d);
+				}
+			}
+			jar.from(ecg);
+			// jar.from("./.").include(files);
+		} catch (Exception e) {
 			throw new GradleException("Unable to read properties file.", e);
 		}
-		jar.from("./.").setIncludes(Arrays.asList(props.getProperty("bin.includes").split(",")));
+		jar.setArchiveName(project.getName() + ".jar");
 		jar.setDestinationDir(new File(project.getRootDir(), "build"));
 	}
+
 }

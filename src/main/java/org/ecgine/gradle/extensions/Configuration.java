@@ -30,6 +30,10 @@ public class Configuration {
 		this.debugPort = debugPort;
 	}
 
+	public void setConsolePort(int consolePort) {
+		this.consolePort = consolePort;
+	}
+
 	public int getDebugPort() {
 		return debugPort;
 	}
