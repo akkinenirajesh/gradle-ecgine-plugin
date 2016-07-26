@@ -1,8 +1,8 @@
 package org.ecgine.gradle.extensions;
 
-public class Package {
+public class EcginePackage {
 
-	private String versionName;
+	private String version;
 
 	private String namespace;
 
@@ -12,12 +12,12 @@ public class Package {
 
 	private String verticals;
 
-	public String getVersionName() {
-		return versionName;
+	public String getVersion() {
+		return version;
 	}
 
-	public void setVersionName(String versionName) {
-		this.versionName = versionName;
+	public void setVersion(String version) {
+		this.version = version;
 	}
 
 	public String getNamespace() {

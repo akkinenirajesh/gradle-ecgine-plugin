@@ -104,6 +104,10 @@ public class EManifest {
 		return ecgineBundleType.equals("client");
 	}
 
+	public boolean isUnknown() {
+		return ecgineBundleType.equals("unknown");
+	}
+
 	public String getSymbolicName() {
 		return symbolicName;
 	}

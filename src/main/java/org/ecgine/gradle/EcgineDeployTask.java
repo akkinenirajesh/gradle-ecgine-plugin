@@ -23,13 +23,12 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.EcgineExtension;
-import org.ecgine.gradle.extensions.Package;
+import org.ecgine.gradle.extensions.EcginePackage;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.TaskAction;
+import org.json.JSONArray;
 import org.json.JSONObject;
-
-import com.amazonaws.util.json.JSONArray;
 
 /**
  *
@@ -41,7 +40,7 @@ import com.amazonaws.util.json.JSONArray;
  */
 public class EcgineDeployTask extends DefaultTask {
 
-	private static final String VERSION = "versionName";
+	private static final String VERSION = "version";
 	private static final String PACKAGE_NAME_SPACE = "namespace";
 	private static final String NAME = "name";
 	private static final String CATEGORY = "category";
@@ -58,11 +57,11 @@ public class EcgineDeployTask extends DefaultTask {
 
 		HttpClient client = HttpClientBuilder.create().build();
 
-		Package pak = (Package) getProject().getExtensions().getByName("package");
+		EcginePackage pak = (EcginePackage) getProject().getExtensions().getByName("ecginepackage");
 
 		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
 
-		Set<EManifest> projects = EcgineUtils.getAllProjects(getProject(), m -> true);
+		Set<EManifest> projects = EcgineUtils.getAllProjects(getProject(), m -> !m.isUnknown());
 
 		Set<Bundle> bundles = EcgineUtils.getBundles(projects, getProject());
 
@@ -86,6 +85,9 @@ public class EcgineDeployTask extends DefaultTask {
 		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
 		builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 		File file = p.getJar();
+		if (!file.exists()) {
+			throw new GradleException("Run build before deploy");
+		}
 		builder.addBinaryBody("upfile", file, ContentType.DEFAULT_BINARY, file.getName());
 		JSONObject json = new JSONObject();
 		json.put("multiple", false);
@@ -96,18 +98,19 @@ public class EcgineDeployTask extends DefaultTask {
 		HttpEntity entity = response.getEntity();
 		EntityUtils.consume(entity);
 		if (status.getStatusCode() != HttpStatus.SC_OK) {
-			throw new GradleException("StatusCode:" + status.getStatusCode() + " URL:" + ext.getUploadBundleUrl());
+			// throw new GradleException("StatusCode:" + status.getStatusCode()
+			// + " URL:" + ext.getUploadBundleUrl());
 		}
 	}
 
-	private void createPackageVersion(HttpClient client, EcgineExtension ext, Package pkg, Set<Bundle> bundles)
+	private void createPackageVersion(HttpClient client, EcgineExtension ext, EcginePackage pkg, Set<Bundle> bundles)
 			throws Exception {
 		HttpPost request = new HttpPost(ext.getCreatePackageVersionUrl());
 		request.addHeader("apikey", ext.getApiKey());
 		// preparing body
 		JSONObject body = new JSONObject();
 		body.put(PACKAGE_NAME_SPACE, pkg.getNamespace());
-		body.put(VERSION, pkg.getVersionName());
+		body.put(VERSION, pkg.getVersion());
 		JSONArray bundlesArray = new JSONArray();
 		body.put(BUNDLES, bundlesArray);
 		bundles.forEach(b -> {
@@ -134,13 +137,12 @@ public class EcgineDeployTask extends DefaultTask {
 			break;
 		case FAILED:
 			System.err.println("Unable to create PackageVersion");
-			System.err.println(result.getString("message"));
-			break;
+			throw new GradleException(result.getString("message"));
 		case SUCESS:
 		}
 	}
 
-	private void createPackage(HttpClient client, EcgineExtension ext, Package ePackage) throws Exception {
+	private void createPackage(HttpClient client, EcgineExtension ext, EcginePackage ePackage) throws Exception {
 		System.out.println("Creating Package...");
 		HttpPost request = new HttpPost(ext.getCreatePackageUrl());
 		request.addHeader("apikey", ext.getApiKey());
