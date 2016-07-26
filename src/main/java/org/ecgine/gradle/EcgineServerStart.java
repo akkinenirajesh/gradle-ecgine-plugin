@@ -1,17 +1,17 @@
 package org.ecgine.gradle;
 
 import org.ecgine.gradle.extensions.Configuration;
-import org.ecgine.gradle.extensions.Master;
+import org.ecgine.gradle.extensions.EcgineExtension;
 
 @SuppressWarnings("unchecked")
 public class EcgineServerStart extends AbstractStart {
 
 	@Override
 	protected void exec() {
-		Master master = (Master) getProject().getExtensions().getByName("master");
-		Configuration cfg = (Configuration) getProject().getExtensions().getByName("server");
-		cfg.property("ecgine.vimukti.create.default", master.toProperty());
-		prepareSetup("server");
+		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
+		Configuration cfg = ext.getServer();
+		cfg.property("ecgine.vimukti.create.default", ext.getMaster().toProperty());
+		prepareSetup(ext, cfg, "server");
 	}
 
 	@Override

@@ -10,7 +10,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
-import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -23,7 +22,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.EcgineExtension;
-import org.ecgine.gradle.extensions.EcginePackage;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.TaskAction;
@@ -57,8 +55,6 @@ public class EcgineDeployTask extends DefaultTask {
 
 		HttpClient client = HttpClientBuilder.create().build();
 
-		EcginePackage pak = (EcginePackage) getProject().getExtensions().getByName("ecginepackage");
-
 		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
 
 		Set<EManifest> projects = EcgineUtils.getAllProjects(getProject(), m -> !m.isUnknown());
@@ -74,7 +70,7 @@ public class EcgineDeployTask extends DefaultTask {
 			bundles.add(new Bundle(m.getSymbolicName(), m.getVersion(), m.getEcgineBundleType()));
 		});
 
-		createPackageVersion(client, ext, pak, bundles);
+		createPackageVersion(client, ext, bundles);
 
 	}
 
@@ -94,23 +90,17 @@ public class EcgineDeployTask extends DefaultTask {
 		builder.addPart("info", new StringBody(json.toString(), ContentType.APPLICATION_JSON));
 		post.setEntity(builder.build());
 		HttpResponse response = client.execute(post);
-		StatusLine status = response.getStatusLine();
 		HttpEntity entity = response.getEntity();
 		EntityUtils.consume(entity);
-		if (status.getStatusCode() != HttpStatus.SC_OK) {
-			// throw new GradleException("StatusCode:" + status.getStatusCode()
-			// + " URL:" + ext.getUploadBundleUrl());
-		}
 	}
 
-	private void createPackageVersion(HttpClient client, EcgineExtension ext, EcginePackage pkg, Set<Bundle> bundles)
-			throws Exception {
+	private void createPackageVersion(HttpClient client, EcgineExtension ext, Set<Bundle> bundles) throws Exception {
 		HttpPost request = new HttpPost(ext.getCreatePackageVersionUrl());
 		request.addHeader("apikey", ext.getApiKey());
 		// preparing body
 		JSONObject body = new JSONObject();
-		body.put(PACKAGE_NAME_SPACE, pkg.getNamespace());
-		body.put(VERSION, pkg.getVersion());
+		body.put(PACKAGE_NAME_SPACE, ext.getNamespace());
+		body.put(VERSION, ext.getVersion());
 		JSONArray bundlesArray = new JSONArray();
 		body.put(BUNDLES, bundlesArray);
 		bundles.forEach(b -> {
@@ -132,8 +122,8 @@ public class EcgineDeployTask extends DefaultTask {
 		JSONObject result = new JSONObject(IOUtils.toString(response.getEntity().getContent()));
 		switch (result.getInt("code")) {
 		case PACKAGE_NOT_FOUND:
-			createPackage(client, ext, pkg);
-			createPackageVersion(client, ext, pkg, bundles);
+			createPackage(client, ext);
+			createPackageVersion(client, ext, bundles);
 			break;
 		case FAILED:
 			System.err.println("Unable to create PackageVersion");
@@ -142,15 +132,15 @@ public class EcgineDeployTask extends DefaultTask {
 		}
 	}
 
-	private void createPackage(HttpClient client, EcgineExtension ext, EcginePackage ePackage) throws Exception {
+	private void createPackage(HttpClient client, EcgineExtension ext) throws Exception {
 		System.out.println("Creating Package...");
 		HttpPost request = new HttpPost(ext.getCreatePackageUrl());
 		request.addHeader("apikey", ext.getApiKey());
 		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-		urlParameters.add(new BasicNameValuePair(NAME, ePackage.getName()));
-		urlParameters.add(new BasicNameValuePair(PACKAGE_NAME_SPACE, ePackage.getNamespace()));
-		urlParameters.add(new BasicNameValuePair(CATEGORY, ePackage.getCategory()));
-		urlParameters.add(new BasicNameValuePair(VERTICALS, ePackage.getVerticals()));
+		urlParameters.add(new BasicNameValuePair(NAME, ext.getName()));
+		urlParameters.add(new BasicNameValuePair(PACKAGE_NAME_SPACE, ext.getNamespace()));
+		urlParameters.add(new BasicNameValuePair(CATEGORY, ext.getCategory()));
+		urlParameters.add(new BasicNameValuePair(VERTICALS, ext.getVerticals()));
 		request.setEntity(new UrlEncodedFormEntity(urlParameters));
 		HttpResponse response = client.execute(request);
 		if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {

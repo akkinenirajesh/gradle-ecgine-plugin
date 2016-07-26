@@ -14,7 +14,7 @@ public class Master {
 				+ subDomain;
 	}
 
-	public void setCompany(String company) {
+	public void company(String company) {
 		this.company = company;
 	}
 
@@ -22,7 +22,7 @@ public class Master {
 		return company;
 	}
 
-	public void setCountry(String country) {
+	public void country(String country) {
 		this.country = country;
 	}
 
@@ -30,7 +30,7 @@ public class Master {
 		return country;
 	}
 
-	public void setEmail(String email) {
+	public void email(String email) {
 		this.email = email;
 	}
 
@@ -38,7 +38,7 @@ public class Master {
 		return email;
 	}
 
-	public void setFirstName(String firstName) {
+	public void firstName(String firstName) {
 		this.firstName = firstName;
 	}
 
@@ -46,7 +46,7 @@ public class Master {
 		return firstName;
 	}
 
-	public void setLastName(String lastName) {
+	public void lastName(String lastName) {
 		this.lastName = lastName;
 	}
 
@@ -54,7 +54,7 @@ public class Master {
 		return lastName;
 	}
 
-	public void setPassword(String password) {
+	public void password(String password) {
 		this.password = password;
 	}
 
@@ -62,7 +62,7 @@ public class Master {
 		return password;
 	}
 
-	public void setSubDomain(String subDomain) {
+	public void domain(String subDomain) {
 		this.subDomain = subDomain;
 	}
 

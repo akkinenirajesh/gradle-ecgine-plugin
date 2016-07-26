@@ -33,11 +33,9 @@ import org.json.JSONObject;
 @SuppressWarnings("unchecked")
 public abstract class AbstractStart extends Exec {
 
-	protected void prepareSetup(String type) {
+	protected void prepareSetup(EcgineExtension ext, Configuration cfg, String type) {
 		try {
-			EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
-			Configuration cfg = (Configuration) getProject().getExtensions().getByName(type);
-			Master master = (Master) getProject().getExtensions().getByName("master");
+			Master master = ext.getMaster();
 			cfg.property("ecgine.vimukti.master", master.getSubDomain() + ".ecgine.com");
 			JSONObject config = getConfiguration(ext, type);
 			File plugins = new File(ext.getPlugins());
