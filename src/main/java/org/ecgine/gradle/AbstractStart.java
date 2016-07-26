@@ -38,7 +38,7 @@ public abstract class AbstractStart extends Exec {
 			EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
 			Configuration cfg = (Configuration) getProject().getExtensions().getByName(type);
 			Master master = (Master) getProject().getExtensions().getByName("master");
-			cfg.property("ecgine.vimukti.master", master.subDomain + ".ecgine.com");
+			cfg.property("ecgine.vimukti.master", master.getSubDomain() + ".ecgine.com");
 			JSONObject config = getConfiguration(ext, type);
 			File plugins = new File(ext.getPlugins());
 			if (!plugins.exists()) {

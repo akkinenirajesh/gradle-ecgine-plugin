@@ -53,6 +53,7 @@ public class EcginePlugin implements Plugin<Project> {
 
 		// replace the jar task to this project.
 		if (project.getRootProject() == project) {
+			project.getTasks().create("deploy", EcgineDeployTask.class);
 			project.getTasks().create("bundles", EcgineBundlesTask.class);
 			project.getTasks().create("ecgineClientStart", EcgineClientStart.class);
 			project.getTasks().create("ecgineServerStart", EcgineServerStart.class);
@@ -61,6 +62,7 @@ public class EcginePlugin implements Plugin<Project> {
 			project.getExtensions().create("server", Configuration.class, 4000, 2502, "64m", "1g");
 			project.getExtensions().create("client", Configuration.class, 8000, 2501, "64m", "1g");
 			project.getExtensions().create("master", Master.class);
+			project.getExtensions().create("package", Package.class);
 			project.getTasks().remove(project.getTasks().getByName("build"));
 		} else {
 			project.getTasks().getByName("jar").doFirst(this::jar);
