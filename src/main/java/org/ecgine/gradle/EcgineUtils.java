@@ -125,7 +125,7 @@ public class EcgineUtils {
 	}
 
 	public static Set<Bundle> getBundles(Set<EManifest> allProjects, Project project) {
-		Map<String, Set<EManifest>> collect = allProjects.stream()
+		Map<BundleType, Set<EManifest>> collect = allProjects.stream()
 				.collect(Collectors.groupingBy(m -> m.getEcgineBundleType(), Collectors.toSet()));
 
 		Set<EManifest> server = collect.get("server");
@@ -145,9 +145,9 @@ public class EcgineUtils {
 
 		Set<Bundle> result = new HashSet<>();
 		// Now we have unique bundles
-		serverDepends.forEach((k, v) -> result.add(new Bundle(k, v, "server")));
-		sharedDepends.forEach((k, v) -> result.add(new Bundle(k, v, "shared")));
-		clientDepends.forEach((k, v) -> result.add(new Bundle(k, v, "client")));
+		serverDepends.forEach((k, v) -> result.add(new Bundle(k, v, BundleType.SERVER)));
+		sharedDepends.forEach((k, v) -> result.add(new Bundle(k, v, BundleType.SHARED)));
+		clientDepends.forEach((k, v) -> result.add(new Bundle(k, v, BundleType.CLIENT)));
 
 		return result;
 	}

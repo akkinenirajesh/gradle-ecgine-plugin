@@ -13,7 +13,7 @@ import org.gradle.api.Project;
 
 public class EManifest {
 
-	private String ecgineBundleType;
+	private BundleType ecgineBundleType;
 	private String symbolicName;
 	private String version;
 	private Project project;
@@ -30,7 +30,7 @@ public class EManifest {
 
 		String bt = allProperties.get("Ecgine-BundleType");
 		if (bt != null) {
-			ecgineBundleType = bt.trim();
+			ecgineBundleType = BundleType.valueOf(bt.trim().toLowerCase());
 		}
 
 		String bv = allProperties.get("Bundle-Version");
@@ -45,9 +45,6 @@ public class EManifest {
 
 		if (requiredBundles == null) {
 			requiredBundles = new HashMap<>();
-		}
-		if (ecgineBundleType == null) {
-			ecgineBundleType = "unknown";
 		}
 	}
 
@@ -116,7 +113,7 @@ public class EManifest {
 		return version;
 	}
 
-	public String getEcgineBundleType() {
+	public BundleType getEcgineBundleType() {
 		return ecgineBundleType;
 	}
 

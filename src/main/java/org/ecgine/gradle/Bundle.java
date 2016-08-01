@@ -4,9 +4,10 @@ public class Bundle {
 
 	private String name;
 	private String version;
-	private String type;
 
-	public Bundle(String name, String version, String type) {
+	private BundleType type;
+
+	public Bundle(String name, String version, BundleType type) {
 		this.name = name;
 		this.version = version;
 		this.type = type;
@@ -20,7 +21,7 @@ public class Bundle {
 		return version;
 	}
 
-	public String getType() {
+	public BundleType getType() {
 		return type;
 	}
 

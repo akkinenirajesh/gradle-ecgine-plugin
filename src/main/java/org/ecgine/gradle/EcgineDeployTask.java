@@ -107,7 +107,7 @@ public class EcgineDeployTask extends DefaultTask {
 			JSONObject bundle = new JSONObject();
 			bundle.put(NAME, b.getName());
 			bundle.put(VERSION, b.getVersion());
-			bundle.put(BUNLDE_TYPE, b.getType());
+			bundle.put(BUNLDE_TYPE, b.getType().name().toLowerCase());
 			bundlesArray.put(bundle);
 		});
 		request.setEntity(new StringEntity(body.toString()));
