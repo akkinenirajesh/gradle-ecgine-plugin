@@ -30,7 +30,7 @@ public class EManifest {
 
 		String bt = allProperties.get("Ecgine-BundleType");
 		if (bt != null) {
-			ecgineBundleType = BundleType.valueOf(bt.trim().toLowerCase());
+			ecgineBundleType = BundleType.valueOf(bt.trim().toUpperCase());
 		}
 
 		String bv = allProperties.get("Bundle-Version");
