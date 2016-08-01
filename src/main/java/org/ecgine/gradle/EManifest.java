@@ -90,19 +90,19 @@ public class EManifest {
 	}
 
 	public boolean isServer() {
-		return ecgineBundleType.equals("server");
+		return ecgineBundleType == BundleType.SERVER;
 	}
 
 	public boolean isShared() {
-		return ecgineBundleType.equals("shared");
+		return ecgineBundleType == BundleType.SHARED;
 	}
 
 	public boolean isClient() {
-		return ecgineBundleType.equals("client");
+		return ecgineBundleType == BundleType.CLIENT;
 	}
 
 	public boolean isUnknown() {
-		return ecgineBundleType.equals("unknown");
+		return ecgineBundleType == null;
 	}
 
 	public String getSymbolicName() {
