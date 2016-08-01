@@ -27,12 +27,14 @@ public class EManifest {
 		if (sn != null) {
 			symbolicName = sn.split(";")[0].trim();
 		}
-
 		String bt = allProperties.get("Ecgine-BundleType");
 		if (bt != null) {
-			ecgineBundleType = BundleType.valueOf(bt.trim().toUpperCase());
+			try {
+				ecgineBundleType = BundleType.valueOf(bt.trim().toUpperCase());
+			} catch (Exception exception) {
+				throw new GradleException("Invalid ecgine bundle type");
+			}
 		}
-
 		String bv = allProperties.get("Bundle-Version");
 		if (bv != null) {
 			version = bv.trim();

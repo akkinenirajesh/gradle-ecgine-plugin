@@ -156,6 +156,9 @@ public class EcgineUtils {
 			Project project) {
 		Map<String, String> result = new HashMap<>();
 		Map<String, JSONObject> dependencies = readJarDependencies(project);
+		if (devBundles == null) {
+			devBundles = new HashSet<>();
+		}
 		devBundles.forEach(m -> m.foreachRequiredBundle((n, v) -> addDependencies(n, v, skip, result, dependencies)));
 		return result;
 	}
