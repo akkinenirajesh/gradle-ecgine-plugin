@@ -26,11 +26,19 @@ public class Configuration {
 		return properties;
 	}
 
-	public void setDebugPort(int debugPort) {
+	public void debugPort(int debugPort) {
 		this.debugPort = debugPort;
 	}
 
-	public void setConsolePort(int consolePort) {
+	public void ms(String ms) {
+		this.ms = ms;
+	}
+
+	public void mx(String mx) {
+		this.mx = mx;
+	}
+
+	public void consolePort(int consolePort) {
 		this.consolePort = consolePort;
 	}
 
@@ -50,4 +58,8 @@ public class Configuration {
 		return consolePort;
 	}
 
+	@Override
+	public String toString() {
+		return "debugPort:" + debugPort + ",consolePort:" + consolePort + ",ms:" + ms + ",mx:" + mx;
+	}
 }

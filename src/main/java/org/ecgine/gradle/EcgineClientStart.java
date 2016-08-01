@@ -18,7 +18,7 @@ public class EcgineClientStart extends AbstractStart {
 		if (!ecgineStart.exists()) {
 			downloadConfigFile(ext, ecgineStart, ext.getEcgineStartUrl());
 		}
-		prepareSetup("client");
+		prepareSetup(ext, ext.getClient(), "client");
 	}
 
 	@Override

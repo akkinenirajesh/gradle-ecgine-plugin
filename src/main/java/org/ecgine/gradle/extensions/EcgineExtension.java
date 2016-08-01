@@ -3,6 +3,10 @@ package org.ecgine.gradle.extensions;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gradle.api.Project;
+
+import groovy.lang.Closure;
+
 /**
  * Extension to configure the Ecgine project
  */
@@ -13,6 +17,10 @@ public class EcgineExtension {
 	private static final String DEPENDENCY = "/api/dependencies";
 	private static final String CONFIG = "/api/config";
 	private static final String ECGINE_START = "/api/ecginestart";
+	private static final String CREATE_EBUNDLE = "/api/createebundle";
+	private static final String CREATE_PACKAGE = "/api/createpackage";
+	private static final String CREATE_PACKAGE_VERSION = "/api/createpackageversion";
+	private static final String LOGIN = "/apikey";
 
 	public static final String NAME = "ecgine";
 
@@ -20,8 +28,6 @@ public class EcgineExtension {
 	 * This is master server address
 	 */
 	private String url = "https://vimukti.ecgine.com/";
-
-	private String apiKey;
 
 	/**
 	 * This directory is used store all downloaded bundles
@@ -32,20 +38,22 @@ public class EcgineExtension {
 
 	private Map<String, String> bundles = new HashMap<>();
 
+	private Configuration client = new Configuration(8000, 2501, "64m", "1g");
+	private Configuration server = new Configuration(4000, 2502, "64m", "1g");
+	private Master master = new Master();
+
+	private Project project;
+
+	public EcgineExtension(Project project) {
+		this.project = project;
+	}
+
 	public String getPlugins() {
 		return plugins;
 	}
 
-	public void setPlugins(String destDir) {
+	public void plugins(String destDir) {
 		this.plugins = destDir;
-	}
-
-	public String getApiKey() {
-		return apiKey;
-	}
-
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
 	}
 
 	public String getUrl() {
@@ -74,6 +82,30 @@ public class EcgineExtension {
 			setup = System.getProperty("user.home") + "/.ecgine/setup";
 		}
 		return setup;
+	}
+
+	public void master(Closure<Master> master) {
+		project.configure(this.master, master);
+	}
+
+	public void server(Closure<Configuration> server) {
+		project.configure(this.server, server);
+	}
+
+	public void client(Closure<Configuration> client) {
+		project.configure(this.client, client);
+	}
+
+	public Configuration getClient() {
+		return client;
+	}
+
+	public Configuration getServer() {
+		return server;
+	}
+
+	public Master getMaster() {
+		return master;
 	}
 
 	public String getDependenciesUrl() {
@@ -107,4 +139,61 @@ public class EcgineExtension {
 		b.append(ECGINE_START);
 		return b.toString();
 	}
+
+	public String getUploadBundleUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(CREATE_EBUNDLE);
+		return b.toString();
+	}
+
+	public String getCreatePackageVersionUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(CREATE_PACKAGE_VERSION);
+		return b.toString();
+	}
+
+	public String getCreatePackageUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(CREATE_PACKAGE);
+		return b.toString();
+	}
+
+	public String getLoginUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(LOGIN);
+		return b.toString();
+	}
+
+	public String getApiKey() {
+		return (String) project.getProperties().get("ecgine.apikey");
+	}
+
+	public String getName() {
+		return (String) project.getProperties().get("ecgine.name");
+	}
+
+	public String getNamespace() {
+		return (String) project.getProperties().get("ecgine.namespace");
+	}
+
+	public String getCategory() {
+		return (String) project.getProperties().get("ecgine.category");
+	}
+
+	public String getVerticals() {
+		return (String) project.getProperties().get("ecgine.verticals");
+	}
+
+	public String getVersion() {
+		return (String) project.getProperties().get("ecgine.version");
+	}
+
 }

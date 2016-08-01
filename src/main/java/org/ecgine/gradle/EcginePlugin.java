@@ -12,9 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.ecgine.gradle.extensions.Configuration;
 import org.ecgine.gradle.extensions.EcgineExtension;
-import org.ecgine.gradle.extensions.Master;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -53,14 +51,13 @@ public class EcginePlugin implements Plugin<Project> {
 
 		// replace the jar task to this project.
 		if (project.getRootProject() == project) {
-			project.getTasks().create("bundles", EcgineBundlesTask.class);
+			project.getTasks().create("ecgineLogin", EcgineLoginTask.class);
+			project.getTasks().create("ecgineDeploy", EcgineDeployTask.class);
+			project.getTasks().create("ecginePrepare", EcgineBundlesTask.class);
 			project.getTasks().create("ecgineClientStart", EcgineClientStart.class);
 			project.getTasks().create("ecgineServerStart", EcgineServerStart.class);
 
-			project.getExtensions().create(EcgineExtension.NAME, EcgineExtension.class);
-			project.getExtensions().create("server", Configuration.class, 4000, 2502, "64m", "1g");
-			project.getExtensions().create("client", Configuration.class, 8000, 2501, "64m", "1g");
-			project.getExtensions().create("master", Master.class);
+			project.getExtensions().create(EcgineExtension.NAME, EcgineExtension.class, project);
 			project.getTasks().remove(project.getTasks().getByName("build"));
 		} else {
 			project.getTasks().getByName("jar").doFirst(this::jar);
@@ -110,7 +107,7 @@ public class EcginePlugin implements Plugin<Project> {
 			plugins.mkdirs();
 		}
 		Map<String, String> dependencies = root.getBundles();
-		Map<String, JSONObject> jarDepends = EcgineUtils.readJarDependencies(c.getLogger(), project.getRootProject());
+		Map<String, JSONObject> jarDepends = EcgineUtils.readJarDependencies(project.getRootProject());
 
 		Set<String> allJarNames = new HashSet<>();
 		dependencies.forEach((k, v) -> {
@@ -145,6 +142,7 @@ public class EcginePlugin implements Plugin<Project> {
 			allJarNames.add(k + "_" + json.getString("version"));
 			existedNames.add(k);
 		}
+
 		JSONArray array = json.getJSONArray("dependents");
 		array.forEach(a -> {
 			JSONObject obj = jarDepends.get(a.toString());

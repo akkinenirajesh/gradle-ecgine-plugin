@@ -35,7 +35,7 @@ public class EcgineBundlesTask extends DefaultTask {
 		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
 
 		// Read from file
-		Map<String, JSONObject> allDepends = EcgineUtils.readJarDependencies(getLogger(), getProject());
+		Map<String, JSONObject> allDepends = EcgineUtils.readJarDependencies(getProject());
 
 		// Get all project dependencies
 		Map<String, String> dependencies = ext.getBundles();
