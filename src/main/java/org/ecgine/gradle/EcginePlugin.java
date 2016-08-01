@@ -51,6 +51,7 @@ public class EcginePlugin implements Plugin<Project> {
 
 		// replace the jar task to this project.
 		if (project.getRootProject() == project) {
+			project.getTasks().create("ecgineLogin", EcgineLoginTask.class);
 			project.getTasks().create("ecgineDeploy", EcgineDeployTask.class);
 			project.getTasks().create("ecginePrepare", EcgineBundlesTask.class);
 			project.getTasks().create("ecgineClientStart", EcgineClientStart.class);

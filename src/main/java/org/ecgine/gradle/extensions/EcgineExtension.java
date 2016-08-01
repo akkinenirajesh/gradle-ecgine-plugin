@@ -20,6 +20,7 @@ public class EcgineExtension {
 	private static final String CREATE_EBUNDLE = "/api/createebundle";
 	private static final String CREATE_PACKAGE = "/api/createpackage";
 	private static final String CREATE_PACKAGE_VERSION = "/api/createpackageversion";
+	private static final String LOGIN = "/apikey";
 
 	public static final String NAME = "ecgine";
 
@@ -160,6 +161,14 @@ public class EcgineExtension {
 		b.append(getUrl());
 		b.append(MASTER_BUNDLE);
 		b.append(CREATE_PACKAGE);
+		return b.toString();
+	}
+
+	public String getLoginUrl() {
+		StringBuilder b = new StringBuilder();
+		b.append(getUrl());
+		b.append(MASTER_BUNDLE);
+		b.append(LOGIN);
 		return b.toString();
 	}
 
