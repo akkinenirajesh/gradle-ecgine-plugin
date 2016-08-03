@@ -41,12 +41,13 @@ public class EcgineBundlesTask extends DefaultTask {
 		Map<String, String> dependencies = ext.getBundles();
 
 		Map<String, String> allJars = new HashMap<>();
-		boolean needUpdate = prepareJarDependencies(ext, client, allDepends, dependencies, allJars, true);
+		Map<String, String> notFound = new HashMap<>();
+		boolean needUpdate = prepareJarDependencies(ext, client, allDepends, dependencies, allJars, notFound, true);
 		if (needUpdate) {
 			EcgineUtils.updateJarDependencies(getLogger(), getProject(), allDepends);
 		}
 
-		Set<String> notFoundJars = new HashSet<>();
+		Set<String> notFoundJars = new HashSet<>(notFound.keySet());
 		allJars.forEach((n, v) -> {
 			File jar = downloadBundle(ext, client, n, v);
 			if (!jar.exists()) {
@@ -56,11 +57,12 @@ public class EcgineBundlesTask extends DefaultTask {
 		if (!notFoundJars.isEmpty()) {
 			throw new GradleException();
 		}
+		System.out.println("add this path in eclipse TargetPlatform: " + ext.getPlugins());
 	}
 
 	private boolean prepareJarDependencies(EcgineExtension ext, HttpClient client, Map<String, JSONObject> allDepends,
-			Map<String, String> dependencies, Map<String, String> output, boolean needDownload) {
-		Map<String, String> notFound = new HashMap<>();
+			Map<String, String> dependencies, Map<String, String> output, Map<String, String> notFound,
+			boolean needDownload) {
 		dependencies.forEach((k, v) -> {
 			JSONObject json = allDepends.get(k);
 			if (json == null || !json.getString("specifiedVersion").equals(v)) {
@@ -85,8 +87,9 @@ public class EcgineBundlesTask extends DefaultTask {
 				}
 				depends.put(e, jar);
 			});
-
-			prepareJarDependencies(ext, client, depends, notFound, output, false);
+			Map<String, String> next = new HashMap<>(notFound);
+			notFound.clear();
+			prepareJarDependencies(ext, client, depends, next, output, notFound, false);
 			allDepends.putAll(depends);
 			return true;
 		}
@@ -162,7 +165,13 @@ public class EcgineBundlesTask extends DefaultTask {
 			HttpResponse response = client.execute(request);
 			int code = response.getStatusLine().getStatusCode();
 			if (code == 200) {
-				IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(jar));
+				File temp = new File(plugins, "temp");
+				if (temp.exists()) {
+					temp.delete();
+				}
+				temp.createNewFile();
+				IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(temp));
+				temp.renameTo(jar);
 			} else {
 				EntityUtils.consume(response.getEntity());
 				if (code == 401) {

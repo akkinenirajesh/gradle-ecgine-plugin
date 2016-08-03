@@ -15,8 +15,6 @@ public class EcgineExtension {
 	private static final String MASTER_BUNDLE = "com.vimukti.ecgine.master";
 	private static final String BUNDLE_DOWNLOAD = "/api/download/bundle";
 	private static final String DEPENDENCY = "/api/dependencies";
-	private static final String CONFIG = "/api/config";
-	private static final String ECGINE_START = "/api/ecginestart";
 	private static final String CREATE_EBUNDLE = "/api/createebundle";
 	private static final String CREATE_PACKAGE = "/api/createpackage";
 	private static final String CREATE_PACKAGE_VERSION = "/api/createpackageversion";
@@ -128,7 +126,7 @@ public class EcgineExtension {
 		StringBuilder b = new StringBuilder();
 		b.append(getUrl());
 		b.append(MASTER_BUNDLE);
-		b.append(CONFIG);
+		b.append("/ecgine.config");
 		return b.toString();
 	}
 
@@ -136,7 +134,7 @@ public class EcgineExtension {
 		StringBuilder b = new StringBuilder();
 		b.append(getUrl());
 		b.append(MASTER_BUNDLE);
-		b.append(ECGINE_START);
+		b.append("/ecgine-start.jar");
 		return b.toString();
 	}
 

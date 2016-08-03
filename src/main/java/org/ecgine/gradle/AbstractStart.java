@@ -18,8 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.Configuration;
@@ -123,7 +122,7 @@ public abstract class AbstractStart extends Exec {
 			testBundles.append(m.getSymbolicName()).append(",");
 			File jar = m.getJar();
 			JSONObject obj = new JSONObject();
-			obj.put("jar", jar);
+			obj.put("jar", jar.getName());
 			obj.put("start", 5);
 			devBundlesArray.put(obj);
 			if (!EcgineUtils.copy(jar, new File(plugins, jar.getName()))) {
@@ -170,19 +169,12 @@ public abstract class AbstractStart extends Exec {
 		System.out.println(file.getName() + " file not found->" + file.getAbsolutePath());
 		try {
 			System.out.println("Downloading " + file.getName() + " file->" + url);
-			HttpPost request = new HttpPost(url);
-			request.addHeader("apikey", ext.getApiKey());
-			JSONArray array = new JSONArray();
-			request.setEntity(new StringEntity(array.toString()));
+			HttpGet request = new HttpGet(url);
 			HttpResponse response = HttpClientBuilder.create().build().execute(request);
 			int code = response.getStatusLine().getStatusCode();
 			if (code != 200) {
 				EntityUtils.consume(response.getEntity());
-				if (code == 401) {
-					throw new GradleException("Invalid api key");
-				} else {
-					throw new GradleException("StatusCode:" + code + " URL:" + url);
-				}
+				throw new GradleException("StatusCode:" + code + " URL:" + url);
 			}
 			System.out.println("Got " + file.getName() + " file.");
 			IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(file));
