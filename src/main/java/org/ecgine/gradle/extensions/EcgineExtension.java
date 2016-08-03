@@ -32,12 +32,14 @@ public class EcgineExtension {
 	 */
 	private String plugins = "plugins";
 
+	private Package pkg = new Package();
+
 	private String setup;
 
 	private Map<String, String> bundles = new HashMap<>();
 
-	private Configuration client = new Configuration(8000, 2501, "64m", "1g", null);
-	private Configuration server = new Configuration(4000, 2502, "64m", "1g", null);
+	private Configuration client = new Configuration(8000, 0, "64m", "1g", null);
+	private Configuration server = new Configuration(4000, 0, "64m", "1g", null);
 	private Master master = new Master();
 
 	private Project project;
@@ -94,8 +96,16 @@ public class EcgineExtension {
 		project.configure(this.client, client);
 	}
 
+	public void pkg(Closure<Package> pkg) {
+		project.configure(this.pkg, pkg);
+	}
+
 	public Configuration getClient() {
 		return client;
+	}
+
+	public Package getPkg() {
+		return pkg;
 	}
 
 	public Configuration getServer() {
@@ -172,26 +182,6 @@ public class EcgineExtension {
 
 	public String getApiKey() {
 		return (String) project.getProperties().get("ecgine.apikey");
-	}
-
-	public String getName() {
-		return (String) project.getProperties().get("ecgine.name");
-	}
-
-	public String getNamespace() {
-		return (String) project.getProperties().get("ecgine.namespace");
-	}
-
-	public String getCategory() {
-		return (String) project.getProperties().get("ecgine.category");
-	}
-
-	public String getVerticals() {
-		return (String) project.getProperties().get("ecgine.verticals");
-	}
-
-	public String getVersion() {
-		return (String) project.getProperties().get("ecgine.version");
 	}
 
 }

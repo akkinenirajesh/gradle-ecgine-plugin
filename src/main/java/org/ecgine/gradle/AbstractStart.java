@@ -131,7 +131,7 @@ public abstract class AbstractStart extends Exec {
 		});
 
 		if (!notFound.isEmpty()) {
-			System.err.println("following jars are not found, run build task");
+			System.err.println("following jars are not found, run ecginePrepare task");
 			notFound.forEach(System.err::println);
 			throw new RuntimeException();
 		}

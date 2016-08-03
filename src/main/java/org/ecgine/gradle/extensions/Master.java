@@ -6,7 +6,7 @@ public class Master {
 	private String email = "test@example.com";
 	private String firstName = "First";
 	private String lastName = "Last";
-	private String password = "#55java";
+	private String password = "password";
 	private String subDomain = "master";
 
 	public String toProperty() {
