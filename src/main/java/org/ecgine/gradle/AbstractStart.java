@@ -237,6 +237,10 @@ public abstract class AbstractStart extends Exec {
 			cmds.add("-Xmx" + mx);
 		}
 
+		String ss = cfg.getSs();
+		if (ss != null) {
+			cmds.add("-Xss" + ss);
+		}
 		int port = cfg.getDebugPort();
 		if (port > 0) {
 			cmds.add("-Xrunjdwp:server=y,transport=dt_socket,address=" + port + ",suspend=n");

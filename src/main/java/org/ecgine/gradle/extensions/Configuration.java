@@ -10,12 +10,14 @@ public class Configuration {
 	private int consolePort;
 	private String ms;
 	private String mx;
+	private String ss;
 
-	public Configuration(int debugPort, int consolePort, String ms, String mx) {
+	public Configuration(int debugPort, int consolePort, String ms, String mx, String ss) {
 		this.debugPort = debugPort;
 		this.consolePort = consolePort;
 		this.ms = ms;
 		this.mx = mx;
+		this.ss = ss;
 	}
 
 	public void property(String key, String value) {
@@ -38,6 +40,10 @@ public class Configuration {
 		this.mx = mx;
 	}
 
+	public void ss(String ss) {
+		this.ss = ss;
+	}
+
 	public void consolePort(int consolePort) {
 		this.consolePort = consolePort;
 	}
@@ -52,6 +58,10 @@ public class Configuration {
 
 	public String getMx() {
 		return mx;
+	}
+
+	public String getSs() {
+		return ss;
 	}
 
 	public int getConsolePort() {

@@ -38,8 +38,8 @@ public class EcgineExtension {
 
 	private Map<String, String> bundles = new HashMap<>();
 
-	private Configuration client = new Configuration(8000, 2501, "64m", "1g");
-	private Configuration server = new Configuration(4000, 2502, "64m", "1g");
+	private Configuration client = new Configuration(8000, 2501, "64m", "1g", null);
+	private Configuration server = new Configuration(4000, 2502, "64m", "1g", null);
 	private Master master = new Master();
 
 	private Project project;

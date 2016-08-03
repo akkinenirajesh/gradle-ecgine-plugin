@@ -54,7 +54,7 @@ ecgine{
 	setup 'LOCATION_TO_SETUP'
 	url 'NEW_ECGINE_REPO_URL'
 }
-```
+```
 
 ####Step 3: Running Configuration(Optional)
 
