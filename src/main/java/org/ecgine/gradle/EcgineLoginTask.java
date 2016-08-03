@@ -1,7 +1,11 @@
 package org.ecgine.gradle;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -20,20 +24,23 @@ import org.json.JSONObject;
 public class EcgineLoginTask extends DefaultTask {
 
 	@TaskAction
-	public void login() {
-		Object args = getProject().getProperties().get("args");
+	public void login() throws Exception {
+		String args = (String) getProject().getProperties().get("emailId");
 		if (args == null) {
-			throw new GradleException("Please provide ecgine credentials. -Pargs=USERNAME,PASSWORD");
+			throw new GradleException("Please provide ecgine credentials. -PemailId=EMAILID");
 		}
-		String[] split = args.toString().split(",");
-		if (split.length < 2) {
-			throw new GradleException("Invalid credentials formate. -Pargs=USERNAME,PASSWORD");
-		}
-
-		String apiKey = getApiKey(split[0], split[1]);
+		char[] password = System.console().readPassword("\nPlease enter password : ");
+		String apiKey = getApiKey(args, new String(password));
 		System.out.println("Successfully got the apikey: " + apiKey);
-		System.out.println("Please add below property in gradle.properties file");
-		System.out.println("ecgine.apikey=" + apiKey);
+		File gradleproperties = new File("gradle.properties");
+		if (!gradleproperties.exists()) {
+			gradleproperties.createNewFile();
+		}
+		Properties properties = new Properties();
+		properties.load(new FileInputStream(gradleproperties));
+		properties.put("apikey", apiKey);
+		properties.store(new FileWriter(gradleproperties), "added apikey");
+		System.out.println("added apikey in gradle.properties file");
 	}
 
 	private String getApiKey(String username, String pwd) {

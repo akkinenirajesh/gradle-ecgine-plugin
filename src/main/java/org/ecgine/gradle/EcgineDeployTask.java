@@ -99,8 +99,8 @@ public class EcgineDeployTask extends DefaultTask {
 		request.addHeader("apikey", ext.getApiKey());
 		// preparing body
 		JSONObject body = new JSONObject();
-		body.put(PACKAGE_NAME_SPACE, ext.getNamespace());
-		body.put(VERSION, ext.getVersion());
+		body.put(PACKAGE_NAME_SPACE, ext.getPkg().getNamespace());
+		body.put(VERSION, ext.getPkg().getVersion());
 		JSONArray bundlesArray = new JSONArray();
 		body.put(BUNDLES, bundlesArray);
 		bundles.forEach(b -> {
@@ -137,10 +137,10 @@ public class EcgineDeployTask extends DefaultTask {
 		HttpPost request = new HttpPost(ext.getCreatePackageUrl());
 		request.addHeader("apikey", ext.getApiKey());
 		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-		urlParameters.add(new BasicNameValuePair(NAME, ext.getName()));
-		urlParameters.add(new BasicNameValuePair(PACKAGE_NAME_SPACE, ext.getNamespace()));
-		urlParameters.add(new BasicNameValuePair(CATEGORY, ext.getCategory()));
-		urlParameters.add(new BasicNameValuePair(VERTICALS, ext.getVerticals()));
+		urlParameters.add(new BasicNameValuePair(NAME, ext.getPkg().getName()));
+		urlParameters.add(new BasicNameValuePair(PACKAGE_NAME_SPACE, ext.getPkg().getNamespace()));
+		urlParameters.add(new BasicNameValuePair(CATEGORY, ext.getPkg().getCategory()));
+		urlParameters.add(new BasicNameValuePair(VERTICALS, ext.getPkg().getVerticals()));
 		request.setEntity(new UrlEncodedFormEntity(urlParameters));
 		HttpResponse response = client.execute(request);
 		if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {

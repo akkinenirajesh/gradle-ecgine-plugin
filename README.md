@@ -35,8 +35,23 @@ ecgine{
 	bundle 'ecgine.client.start_1.0.0'
 }
 ```
+####Step 2: Package Configuration(Required)
 
-####Step 2: Changing default values(Optional)
+Set below properties to upload bundles and create package version.
+
+```groovy
+ecgine{
+	pkg{
+		name      'NAME'
+		namespace 'NAME_SPACE'
+		version   'VERSION'
+		category  'CATEGORY'
+		verticals 'VERTICALS'
+	}
+}	
+```
+
+####Step 3: Changing default values(Optional)
 
 Property | Default Value | Description
 -------- | ------------- | -----------
@@ -53,7 +68,7 @@ ecgine{
 }
 ```
 
-####Step 3: Running Configuration(Optional)
+####Step 4: Running Configuration(Optional)
 
 Property | Default Value | Description
 -------- | ------------- | -----------
@@ -77,7 +92,8 @@ ecgine{
 }
 ```
 
-####Step 4: Master Configuration(Optional)
+
+####Step 5: Master Configuration(Optional)
 
 Property | Default Value | Description
 -------- | ------------- | -----------
@@ -86,7 +102,7 @@ company | 'India' | Country of that company
 email | 'test@example.com' | Email id to login
 firstName | 'First' | First name of that user
 lastName | 'Last' | Last name of that user
-password | '#55java' | A password to login
+password | 'password' | A password to login
 subDomain| 'master' | A subdomain
 
 Set below properties to change master details
@@ -101,13 +117,10 @@ ecgine{
 ### Using the plugin
 
 ####Step 1: Getting APIKEY
-First you need to login with ecgine emailId and password, you will get an APIKEY. Then you need to put it in gradle.properties.
-
->ecgine.apikey=API_KEY
-
+First you need to login with ecgine emailId and password, you will get an APIKEY.
 
 Run below command to get apikey
-> gradle ecgineLogin -Pargs=emaildId,password
+> gradle ecgineLogin -Pemailid=emailId
 
 
 ####Step 2: Prepare bundles
@@ -129,14 +142,4 @@ Run below command to start ecgine client
 
 Run below command to deploy your package in ecgine repository
 > gradle ecgineDeploy
-
-This task needs below properties in gradle.properties file.
-
-Property | Description
--------- | -----------
-ecgine.name| Name of the package
-ecgine.namespace | Namespace of the package
-ecgine.version | Version of the package
-ecgine.category | Category of the package
-ecgine.verticals | Verticals of the package
 
