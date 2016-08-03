@@ -110,7 +110,7 @@ email | 'test@example.com' | Email id to login
 firstName | 'First' | First name of that user
 lastName | 'Last' | Last name of that user
 password | 'password' | A password to login
-subDomain| 'master' | A subdomain
+domain| 'master' | A subdomain
 
 Set below properties to change master details
 ```groovy
