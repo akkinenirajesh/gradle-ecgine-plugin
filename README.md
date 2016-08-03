@@ -1,31 +1,18 @@
-# Gradle plugin for React
+# Gradle plugin for Ecgine
 
 [![Build Status](https://travis-ci.org/ehirsch/gradle-react-plugin.svg?branch=master)][3] [![Download](https://api.bintray.com/packages/ehirsch/maven/gradle-react-plugin/images/download.svg)][4] [![License](http://img.shields.io/:license-apache-blue.svg)][5]
 
-This is a very simple Gradle plugin to transform JSX sources into JavaScript. It was inspired by and is using the
-[gradle-node-plugin][1] from [Sten Roger Sandvik][2].
+This is a very simple Gradle plugin to deploy and test ecgine projects.
 
-[React][6] is
-
-> A JAVASCRIPT LIBRARY FOR BUILDING USER INTERFACES
-
-developed at Facebook and Instagram.
 
 ## Installing the plugin
 
 Releases of this plugin are hosted at BinTray (http://bintray.com) and is part of jcenter repository.
+
 Setup the plugin like this:
 
 
-### Gradle versions since 2.1
-
-```groovy
-plugins {
-    id 'net.eikehirsch.react' version '0.3.1'
-}
-```
-
-### Gradle versions below 2.1
+###  Gradle versions since 2.13
 
 ```groovy
 buildscript {
@@ -33,76 +20,83 @@ buildscript {
 		jcenter()
 	}
 	dependencies {
-		classpath 'net.eikehirsch.react:gradle-react-plugin:0.3.1'
+		classpath 'org.ecgine.gradle:gradle-ecgine-plugin:1.0'
 	}
 }
 
-apply plugin: 'net.eikehirsch.react'
+apply plugin: 'org.ecgine.gradle'
 ```
-
-The plugin will also apply gradle-node-plugin for Node and NPM related tasks. (see [http://github/srs/gradle-node-plugin][1] for details).
-
-## Using the plugin
-
-Simply run
-
-```sh
-./gradlew jsx
-```
-to transform any js file in `src/main/react`. The resulting files will be stored at `build/react`.
 
 ### Configure the plugin
+####Step 1: Adding bundles(Required)
 
-To change the defaults you can put all your settings into the `jsx` namespace:
+Add below closer with required bundles.
 
 ```groovy
-jsx {
-  sourcesDir = 'src/react'
-  destDir    = 'out'
+ecgine{
+	bundle 'ecgine.server.start_1.0.0'
+	bundle 'ecgine.client.start_1.0.0'
 }
 ```
 
-### Create your own jsx task
+####Step 2: Changing default values(Optional)
 
-You can define the input and output folders without using the extension namespace like this:
+Property | Default Value | Description
+-------- | ------------- | -----------
+plugins | 'plugins' | A directory to strore all bundles.
+setup | ${user.home}/.ecgine/setup | A directory to prepare client and server setups to run
+url | 'https://vimukti.ecgine.com/' | An URL for ecgine repository.
 
+Set below properties to change default values.
 ```groovy
-task myJSX( type: JSXTask ) {
-    sourcesDir = 'src/react'
-    destDir = 'out'
+ecgine{
+	plugins 'LOCATION_TO_PLUGINS'
+	setup 'LOCATION_TO_SETUP'
+	url 'NEW_ECGINE_REPO_URL'
+}
+```
+
+####Step 3: Running Configuration(Optional)
+
+Property | Default Value | Description
+-------- | ------------- | -----------
+debugPort | 8000(client)/4000(server) | A port to debug client/server (0 for no debug)
+consolePort | 2501(client)/2502(server) | A port to open osgi console (0 for no console)
+ms | '64m' | Initial java heap space
+mx | '1g' | Maximum java heap space
+ss | none | Java thread stack size
+
+Set below properties for client and server running configuration
+```groovy
+ecgine{
+	client{
+		debugPort CLIENT_DEBUG_PORT
+		consolePort CLIENT_CONSOLE_PORT
+	}
+	server{
+		debugPort SERVER_DEBUG_PORT
+		consolePort SERVER_CONSOLE_PORT
+	}
 }
 ```
-(You can try this at the configuration example project)
 
-### Include jsx with the build
+####Step 4: Master Configuration(Optional)
 
-If you want to have your jsx sources transformed everytime you build your project, you could do something like this:
+Property | Default Value | Description
+-------- | ------------- | -----------
+company | 'Test' | Name of the company
+company | 'India' | Country of that company
+email | 'test@example.com' | Email id to login
+firstName | 'First' | First name of that user
+lastName | 'Last' | Last name of that user
+password | '#55java' | A password to login
+subDomain| 'master' | A subdomain
 
+Set below properties to change master details
 ```groovy
-processResources.dependsOn jsx
-
-// for older gradle versions (e.g. 1.4) use:
-processResources.dependsOn 'jsx'
+ecgine{
+	master{
+		subDomain 'TEST_DOMAIN'
+	}
+}
 ```
-
-## Building the Plugin
-
-To build the plugin, just type the following command:
-
-```sh
-./gradlew clean build
-```
-
-## Acknowledgments
-
-* Thanks to [Sten R. Sandvik][2] for his [node plugin][1]
-* that's all for now.
-
-
-
-[1]: https://github.com/srs/gradle-node-plugin "gradle-node-plugin"
-[2]: https://github.com/srs "Stens' GitHup page"
-[3]: https://travis-ci.org/ehirsch/gradle-react-plugin "build status on travis-ci"
-[4]: https://bintray.com/ehirsch/maven/gradle-react-plugin/_latestVersion "download latest version"
-[5]: http://www.apache.org/licenses/LICENSE-2.0.html "Apache License v2.0"
-[6]: http://facebook.github.io/react/index.html "React homepage"
