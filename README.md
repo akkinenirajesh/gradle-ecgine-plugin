@@ -36,10 +36,12 @@ ecgine{
 }
 ```
 ####Step 2: Package Configuration(Required)
+
 Set below properties to upload bundles and create package version.
+
 ```groovy
-ecgine {
-	pkg {
+ecgine{
+	pkg{
 		name      'NAME'
 		namespace 'NAME_SPACE'
 		version   'VERSION'
@@ -48,6 +50,7 @@ ecgine {
 	}
 }	
 ```
+
 ####Step 3: Changing default values(Optional)
 
 Property | Default Value | Description
@@ -139,6 +142,4 @@ Run below command to start ecgine client
 
 Run below command to deploy your package in ecgine repository
 > gradle ecgineDeploy
-
-This task needs below properties in gradle.properties file.
 
