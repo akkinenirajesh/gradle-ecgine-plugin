@@ -1,7 +1,4 @@
 # Gradle plugin for Ecgine
-
-[![Build Status](https://travis-ci.org/ehirsch/gradle-react-plugin.svg?branch=master)][3] [![Download](https://api.bintray.com/packages/ehirsch/maven/gradle-react-plugin/images/download.svg)][4] [![License](http://img.shields.io/:license-apache-blue.svg)][5]
-
 This is a very simple Gradle plugin to deploy and test ecgine projects.
 
 
@@ -100,3 +97,44 @@ ecgine{
 	}
 }
 ```
+
+### Using the plugin
+
+####Step 1: Getting APIKEY
+First you need to login with ecgine emailId and password, you will get an APIKEY. Then you need to put it in gradle.properties.
+
+>>ecgine.apikey=API_KEY
+
+
+Run below command to get apikey
+>> gradle ecgineLogin -Pargs=emaildId,password
+
+
+####Step 2: Prepare bundles
+
+Run below command to get all bundles from ecgine repository
+>> gradle ecginePrepare
+
+####Step 3: Run ecgine server
+
+Run below command to start ecgine server
+>> gradle ecgineServerStart
+
+####Step 4: Run ecgine client
+
+Run below command to start ecgine client
+>> gradle ecgineClientStart
+
+####Step 5: Deploy package
+
+Run below command to deploy your package in ecgine repository
+>> gradle ecgineDeploy
+
+Property | Description
+-------- | -----------
+ecgine.name| Name of the package
+ecgine.namespace | Namespace of the package
+ecgine.version | Version of the package
+ecgine.category | Category of the package
+ecgine.verticals | Verticals of the package
+
