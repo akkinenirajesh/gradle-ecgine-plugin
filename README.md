@@ -50,6 +50,13 @@ ecgine{
 	}
 }	
 ```
+Property | Description
+-------- | -----------
+name| Name of the package
+namespace | Namespace of the package
+version | Version of the package
+category | Category of the package
+verticals | Verticals of the package
 
 ####Step 3: Changing default values(Optional)
 
@@ -127,6 +134,10 @@ Run below command to get apikey
 
 Run below command to get all bundles from ecgine repository
 > gradle ecginePrepare
+
+Note :Add plugins directory in target platform to make available all ecgine bundles to build in eclipse.
+Goto window -> preferences -> plug in development -> target platform ->Add
+
 
 ####Step 3: Run ecgine server
 
