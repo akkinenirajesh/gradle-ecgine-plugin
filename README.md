@@ -130,6 +130,8 @@ Run below command to start ecgine client
 Run below command to deploy your package in ecgine repository
 > gradle ecgineDeploy
 
+This task needs below properties in gradle.properties file.
+
 Property | Description
 -------- | -----------
 ecgine.name| Name of the package
