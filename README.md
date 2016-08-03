@@ -103,32 +103,32 @@ ecgine{
 ####Step 1: Getting APIKEY
 First you need to login with ecgine emailId and password, you will get an APIKEY. Then you need to put it in gradle.properties.
 
->>ecgine.apikey=API_KEY
+>ecgine.apikey=API_KEY
 
 
 Run below command to get apikey
->> gradle ecgineLogin -Pargs=emaildId,password
+> gradle ecgineLogin -Pargs=emaildId,password
 
 
 ####Step 2: Prepare bundles
 
 Run below command to get all bundles from ecgine repository
->> gradle ecginePrepare
+> gradle ecginePrepare
 
 ####Step 3: Run ecgine server
 
 Run below command to start ecgine server
->> gradle ecgineServerStart
+> gradle ecgineServerStart
 
 ####Step 4: Run ecgine client
 
 Run below command to start ecgine client
->> gradle ecgineClientStart
+> gradle ecgineClientStart
 
 ####Step 5: Deploy package
 
 Run below command to deploy your package in ecgine repository
->> gradle ecgineDeploy
+> gradle ecgineDeploy
 
 Property | Description
 -------- | -----------
