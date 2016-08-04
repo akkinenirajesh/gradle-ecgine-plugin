@@ -179,7 +179,7 @@ public abstract class AbstractStart extends Exec {
 			System.out.println("Got " + file.getName() + " file.");
 			IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(file));
 		} catch (Exception e) {
-			throw new GradleException("", e);
+			throw new GradleException(e.getMessage(), e);
 		}
 	}
 
