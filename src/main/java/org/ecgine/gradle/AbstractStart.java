@@ -51,7 +51,7 @@ public abstract class AbstractStart extends Exec {
 		}
 	}
 
-	private JSONObject getConfiguration(EcgineExtension ext, String type) throws IOException {
+	protected JSONObject getConfiguration(EcgineExtension ext, String type) throws IOException {
 		File plugins = new File(ext.getPlugins());
 		if (!plugins.exists()) {
 			plugins.mkdirs();
@@ -183,7 +183,7 @@ public abstract class AbstractStart extends Exec {
 		}
 	}
 
-	private List<String> prepareSetup(File plugins, Configuration con, String setup, String type, JSONObject config)
+	protected List<String> prepareSetup(File plugins, Configuration con, String setup, String type, JSONObject config)
 			throws IOException {
 		File root = new File(setup, type);
 		if (root.exists()) {
