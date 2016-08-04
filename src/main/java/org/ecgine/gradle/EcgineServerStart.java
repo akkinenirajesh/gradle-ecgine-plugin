@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.ecgine.gradle.extensions.Configuration;
@@ -46,10 +47,11 @@ public class EcgineServerStart extends AbstractStart {
 			throws IOException {
 		List<String> prepareSetup = super.prepareSetup(plugins, con, setup, type, config);
 		JSONArray masters = config.getJSONArray("master");
-		File masterDir = new File(plugins, "master");
-		if (!masterDir.exists()) {
-			masterDir.mkdirs();
+		File masterDir = new File(setup, "work/master");
+		if (masterDir.exists()) {
+			FileUtils.deleteDirectory(masterDir);
 		}
+		masterDir.mkdirs();
 		for (int i = 0; i < masters.length(); i++) {
 			JSONObject master = masters.getJSONObject(i);
 			File source = new File(plugins,

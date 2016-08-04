@@ -181,7 +181,7 @@ public class EcgineBundlesTask extends DefaultTask {
 				}
 			}
 		} catch (Exception e) {
-			throw new GradleException("", e);
+			throw new GradleException(e.getMessage(), e);
 		}
 		return jar;
 	}
