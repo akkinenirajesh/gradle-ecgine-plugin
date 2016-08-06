@@ -184,4 +184,8 @@ public class EcgineExtension {
 		return (String) project.getProperties().get("ecgine.apikey");
 	}
 
+	public String getCertificateUrl() {
+		return "http://s1.infra.ecgine.com/certificate/vimukti_codegen_bundle.crt";
+	}
+
 }

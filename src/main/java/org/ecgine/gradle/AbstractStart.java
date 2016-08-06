@@ -58,7 +58,7 @@ public abstract class AbstractStart extends Exec {
 		}
 		File config = new File(plugins, ".config");
 		if (!config.exists()) {
-			downloadConfigFile(ext, config, ext.getConfigUrl());
+			downloadConfigFile(config, ext.getConfigUrl());
 		}
 		getLogger().debug("loading .config file->" + config.getAbsolutePath());
 		String string = new String(Files.readAllBytes(config.toPath()));
@@ -165,7 +165,7 @@ public abstract class AbstractStart extends Exec {
 
 	protected abstract boolean filterDevBundle(EManifest manifest);
 
-	protected void downloadConfigFile(EcgineExtension ext, File file, String url) {
+	public static void downloadConfigFile(File file, String url) {
 		System.out.println(file.getName() + " file not found->" + file.getAbsolutePath());
 		try {
 			System.out.println("Downloading " + file.getName() + " file->" + url);

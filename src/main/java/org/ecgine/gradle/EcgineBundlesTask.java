@@ -26,6 +26,8 @@ import org.gradle.api.tasks.TaskAction;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.google.common.io.Files;
+
 public class EcgineBundlesTask extends DefaultTask {
 
 	@TaskAction
@@ -171,7 +173,7 @@ public class EcgineBundlesTask extends DefaultTask {
 				}
 				temp.createNewFile();
 				IOUtils.copy(response.getEntity().getContent(), new FileOutputStream(temp));
-				temp.renameTo(jar);
+				Files.copy(temp, jar);
 			} else {
 				EntityUtils.consume(response.getEntity());
 				if (code == 401) {
