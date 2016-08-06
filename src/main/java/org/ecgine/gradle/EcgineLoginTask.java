@@ -1,11 +1,18 @@
 package org.ecgine.gradle;
 
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
+import javax.swing.SwingUtilities;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -29,8 +36,8 @@ public class EcgineLoginTask extends DefaultTask {
 		if (args == null) {
 			throw new GradleException("Please provide ecgine credentials. -PemailId=EMAILID");
 		}
-		char[] password = System.console().readPassword("\nPlease enter password : ");
-		String apiKey = getApiKey(args, new String(password));
+		String password = readPwd();
+		String apiKey = getApiKey(args, password);
 		System.out.println("Successfully got the apikey: " + apiKey);
 		File gradleproperties = new File("gradle.properties");
 		if (!gradleproperties.exists()) {
@@ -41,6 +48,34 @@ public class EcgineLoginTask extends DefaultTask {
 		properties.put("apikey", apiKey);
 		properties.store(new FileWriter(gradleproperties), "added apikey");
 		System.out.println("added apikey in gradle.properties file");
+	}
+
+	private String readPwd() {
+		final JPasswordField jpf = new JPasswordField();
+		JOptionPane jop = new JOptionPane(jpf, JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+		JDialog dialog = jop.createDialog("Password:");
+		dialog.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentShown(ComponentEvent e) {
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						jpf.requestFocusInWindow();
+					}
+				});
+			}
+		});
+		dialog.setVisible(true);
+		int result = (Integer) jop.getValue();
+		dialog.dispose();
+		char[] password = null;
+		if (result == JOptionPane.OK_OPTION) {
+			password = jpf.getPassword();
+		}
+		if (password != null) {
+			return new String(password);
+		}
+		return null;
 	}
 
 	private String getApiKey(String username, String pwd) {
