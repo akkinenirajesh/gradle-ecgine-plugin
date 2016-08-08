@@ -20,7 +20,6 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.EcgineExtension;
@@ -95,7 +94,7 @@ public class EcgineLoginTask extends DefaultTask {
 			List<NameValuePair> params = new LinkedList<NameValuePair>();
 			params.add(new BasicNameValuePair("email", username));
 			params.add(new BasicNameValuePair("password", pwd));
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = ext.getHttpClient();
 			HttpGet request = new HttpGet(url + "?" + URLEncodedUtils.format(params, "utf-8"));
 			HttpResponse response = client.execute(request);
 			int code = response.getStatusLine().getStatusCode();

@@ -6,7 +6,6 @@ import javax.net.ssl.SSLHandshakeException;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.EcgineExtension;
 import org.gradle.api.GradleException;
@@ -21,7 +20,7 @@ public class InstallCertificate extends Exec {
 
 		HttpGet request = new HttpGet(ext.getUrl());
 		try {
-			HttpResponse response = HttpClientBuilder.create().build().execute(request);
+			HttpResponse response = ext.getHttpClient().execute(request);
 			EntityUtils.consume(response.getEntity());
 		} catch (Exception e) {
 			if (!(e instanceof SSLHandshakeException)) {
@@ -42,7 +41,7 @@ public class InstallCertificate extends Exec {
 
 		// http://s1.infra.ecgine.com/certificate/vimukti_codegen_bundle.crt
 		if (!cert.exists()) {
-			AbstractStart.downloadConfigFile(cert, ext.getCertificateUrl());
+			AbstractStart.downloadConfigFile(ext.getHttpClient(), cert, ext.getCertificateUrl());
 		}
 
 		setCommandLine("keytool", "-import", "-alias", "ecgine.com", "-keystore", "../jre/lib/security/cacerts",

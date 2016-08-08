@@ -21,6 +21,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class EcgineUtils {
+
 	public static Map<String, JSONObject> readJarDependencies(Project project) {
 		File ecgine = getDependenciesFile(project);
 		if (!ecgine.exists()) {

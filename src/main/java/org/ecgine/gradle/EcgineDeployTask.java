@@ -18,7 +18,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.StringBody;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.EcgineExtension;
@@ -53,9 +52,9 @@ public class EcgineDeployTask extends DefaultTask {
 	@TaskAction
 	public void deploy() throws Exception {
 
-		HttpClient client = HttpClientBuilder.create().build();
-
 		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
+
+		HttpClient client = ext.getHttpClient();
 
 		Set<EManifest> projects = EcgineUtils.getAllProjects(getProject(), m -> !m.isUnknown());
 

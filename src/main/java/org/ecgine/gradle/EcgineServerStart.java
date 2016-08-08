@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.ecgine.gradle.extensions.Configuration;
 import org.ecgine.gradle.extensions.EcgineExtension;
 import org.json.JSONArray;
@@ -33,7 +32,7 @@ public class EcgineServerStart extends AbstractStart {
 	protected JSONObject getConfiguration(EcgineExtension ext, String type) throws IOException {
 		JSONObject configuration = super.getConfiguration(ext, type);
 		JSONArray masters = configuration.getJSONArray("master");
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = ext.getHttpClient();
 		for (int i = 0; i < masters.length(); i++) {
 			JSONObject master = masters.getJSONObject(i);
 			EcgineBundlesTask.downloadBundle(ext, client, master.getString("symbolicName"),
