@@ -2,6 +2,7 @@ package org.ecgine.gradle;
 
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
@@ -36,7 +37,10 @@ public class EcgineLoginTask extends DefaultTask {
 		if (args == null) {
 			throw new GradleException("Please provide ecgine credentials. -PemailId=EMAILID");
 		}
-		String password = readPwd();
+		String password = (String) getProject().getProperties().get("password");
+		if (password == null) {
+			password = readPwd();
+		}
 		String apiKey = getApiKey(args, password);
 		System.out.println("Successfully got the apikey: " + apiKey);
 		File gradleproperties = new File("gradle.properties");
@@ -51,6 +55,11 @@ public class EcgineLoginTask extends DefaultTask {
 	}
 
 	private String readPwd() {
+		Console console = System.console();
+		if (console != null) {
+			char[] readPassword = console.readPassword("\nPlease enter password :");
+			return new String(readPassword);
+		}
 		final JPasswordField jpf = new JPasswordField();
 		JOptionPane jop = new JOptionPane(jpf, JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 		JDialog dialog = jop.createDialog("Password:");
@@ -75,11 +84,10 @@ public class EcgineLoginTask extends DefaultTask {
 		if (password != null) {
 			return new String(password);
 		}
-		return null;
+		return "";
 	}
 
 	private String getApiKey(String username, String pwd) {
-
 		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
 		try {
 			String url = ext.getLoginUrl();
