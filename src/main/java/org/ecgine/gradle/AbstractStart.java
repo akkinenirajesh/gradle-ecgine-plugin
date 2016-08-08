@@ -19,7 +19,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.Configuration;
 import org.ecgine.gradle.extensions.EcgineExtension;
@@ -58,7 +57,7 @@ public abstract class AbstractStart extends Exec {
 		}
 		File config = new File(plugins, ".config");
 		if (!config.exists()) {
-			downloadConfigFile(config, ext.getConfigUrl());
+			downloadConfigFile(ext.getHttpClient(),config, ext.getConfigUrl());
 		}
 		getLogger().debug("loading .config file->" + config.getAbsolutePath());
 		String string = new String(Files.readAllBytes(config.toPath()));
@@ -165,12 +164,12 @@ public abstract class AbstractStart extends Exec {
 
 	protected abstract boolean filterDevBundle(EManifest manifest);
 
-	public static void downloadConfigFile(File file, String url) {
+	public static void downloadConfigFile(HttpClient client, File file, String url) {
 		System.out.println(file.getName() + " file not found->" + file.getAbsolutePath());
 		try {
 			System.out.println("Downloading " + file.getName() + " file->" + url);
 			HttpGet request = new HttpGet(url);
-			HttpResponse response = HttpClientBuilder.create().build().execute(request);
+			HttpResponse response = client.execute(request);
 			int code = response.getStatusLine().getStatusCode();
 			if (code != 200) {
 				EntityUtils.consume(response.getEntity());
@@ -303,7 +302,7 @@ public abstract class AbstractStart extends Exec {
 
 		if (needDownload && !notFound.isEmpty()) {
 			EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = ext.getHttpClient();
 			notFound.forEach(n -> {
 				String[] split = n.split("_");
 				String version = split[split.length - 1];

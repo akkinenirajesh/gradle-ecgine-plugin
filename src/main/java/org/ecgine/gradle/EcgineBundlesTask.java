@@ -16,7 +16,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.EcgineExtension;
@@ -32,9 +31,10 @@ public class EcgineBundlesTask extends DefaultTask {
 
 	@TaskAction
 	public void bundles() {
-		HttpClient client = HttpClientBuilder.create().build();
 
 		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
+
+		HttpClient client = ext.getHttpClient();
 
 		// Read from file
 		Map<String, JSONObject> allDepends = EcgineUtils.readJarDependencies(getProject());
