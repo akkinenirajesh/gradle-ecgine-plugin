@@ -254,4 +254,16 @@ public class EcgineExtension {
 		return "http://s1.infra.ecgine.com/certificate/vimukti_codegen_bundle.crt";
 	}
 
+	/**
+	 * def jres_download_url="http://192.168.0.2/ecgine/jres";
+	 * 
+	 * println
+	 * "downloading jre: {jres_download_url}/${jre_version}-${jre_platform}.zip"
+	 * 
+	 * @return
+	 */
+	public String getJREURL() {
+		String model = System.getProperty("sun.arch.data.model");
+		return "http://s1.infra.ecgine.com/ecgine/jres/jre-8u77-x" + model + ".zip";
+	}
 }
