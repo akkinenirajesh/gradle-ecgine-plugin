@@ -229,19 +229,22 @@ public abstract class AbstractStart extends Exec {
 	}
 
 	private void unzip(File destination, File source) throws IOException {
+		if (!destination.exists()) {
+			destination.mkdirs();
+		}
 		System.out.println("Please wait unziping downloaded jre to " + destination.getAbsolutePath());
 		ZipInputStream zipIn = new ZipInputStream(new FileInputStream(source));
 		ZipEntry entry = zipIn.getNextEntry();
 		// iterates over entries in the zip file
 		while (entry != null) {
-			String filePath = destination + File.separator + entry.getName();
-			if (!entry.isDirectory()) {
-				// if the entry is a file, extracts it
-				extractFile(zipIn, filePath);
-			} else {
+			File file = new File(destination, entry.getName());
+			if (entry.isDirectory()) {
 				// if the entry is a directory, make the directory
-				File dir = new File(filePath);
-				dir.mkdir();
+				file.mkdirs();
+			} else {
+				// if the entry is a file, extracts it
+				file.createNewFile();
+				extractFile(zipIn, file);
 			}
 			zipIn.closeEntry();
 			entry = zipIn.getNextEntry();
@@ -250,8 +253,8 @@ public abstract class AbstractStart extends Exec {
 		System.out.println("Unziping jre completed");
 	}
 
-	private static void extractFile(ZipInputStream zipIn, String filePath) throws IOException {
-		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
+	private void extractFile(ZipInputStream zipIn, File file) throws IOException {
+		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
 		byte[] bytesIn = new byte[4096];
 		int read = 0;
 		while ((read = zipIn.read(bytesIn)) != -1) {

@@ -260,7 +260,7 @@ public class EcgineExtension {
 	 * println
 	 * "downloading jre: {jres_download_url}/${jre_version}-${jre_platform}.zip"
 	 * 
-	 * @return
+	 * @return URL Of JRE
 	 */
 	public String getJREURL() {
 		String model = System.getProperty("sun.arch.data.model");

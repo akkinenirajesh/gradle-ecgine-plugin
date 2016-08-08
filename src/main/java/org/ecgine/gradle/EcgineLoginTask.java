@@ -48,7 +48,7 @@ public class EcgineLoginTask extends DefaultTask {
 		}
 		Properties properties = new Properties();
 		properties.load(new FileInputStream(gradleproperties));
-		properties.put("apikey", apiKey);
+		properties.put("ecgine.apikey", apiKey);
 		properties.store(new FileWriter(gradleproperties), "added apikey");
 		System.out.println("added apikey in gradle.properties file");
 	}
