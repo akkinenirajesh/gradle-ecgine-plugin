@@ -1,11 +1,19 @@
 package org.ecgine.gradle;
 
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
+import javax.swing.SwingUtilities;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -29,8 +37,11 @@ public class EcgineLoginTask extends DefaultTask {
 		if (args == null) {
 			throw new GradleException("Please provide ecgine credentials. -PemailId=EMAILID");
 		}
-		char[] password = System.console().readPassword("\nPlease enter password : ");
-		String apiKey = getApiKey(args, new String(password));
+		String password = (String) getProject().getProperties().get("password");
+		if (password == null) {
+			password = readPwd();
+		}
+		String apiKey = getApiKey(args, password);
 		System.out.println("Successfully got the apikey: " + apiKey);
 		File gradleproperties = new File("gradle.properties");
 		if (!gradleproperties.exists()) {
@@ -43,8 +54,40 @@ public class EcgineLoginTask extends DefaultTask {
 		System.out.println("added apikey in gradle.properties file");
 	}
 
-	private String getApiKey(String username, String pwd) {
+	private String readPwd() {
+		Console console = System.console();
+		if (console != null) {
+			char[] readPassword = console.readPassword("\nPlease enter password :");
+			return new String(readPassword);
+		}
+		final JPasswordField jpf = new JPasswordField();
+		JOptionPane jop = new JOptionPane(jpf, JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+		JDialog dialog = jop.createDialog("Password:");
+		dialog.addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentShown(ComponentEvent e) {
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						jpf.requestFocusInWindow();
+					}
+				});
+			}
+		});
+		dialog.setVisible(true);
+		int result = (Integer) jop.getValue();
+		dialog.dispose();
+		char[] password = null;
+		if (result == JOptionPane.OK_OPTION) {
+			password = jpf.getPassword();
+		}
+		if (password != null) {
+			return new String(password);
+		}
+		return "";
+	}
 
+	private String getApiKey(String username, String pwd) {
 		EcgineExtension ext = (EcgineExtension) getProject().getExtensions().getByName(EcgineExtension.NAME);
 		try {
 			String url = ext.getLoginUrl();
