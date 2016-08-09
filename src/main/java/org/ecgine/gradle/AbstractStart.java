@@ -1,6 +1,8 @@
 package org.ecgine.gradle;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,12 +15,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.ecgine.gradle.extensions.Configuration;
 import org.ecgine.gradle.extensions.EcgineExtension;
@@ -40,7 +45,27 @@ public abstract class AbstractStart extends Exec {
 			if (!plugins.exists()) {
 				plugins.mkdirs();
 			}
-			List<String> cmds = prepareSetup(plugins, cfg, ext.getSetup(), type, config);
+			String setup = ext.getSetup();
+			String jreVersion = null;
+			if (config.has("jreVersion")) {
+				jreVersion = config.getString("jreVersion");
+			} else {
+				jreVersion = EcgineExtension.DEFAULT_JRE_VERSION;
+			}
+			// Downloading JRE
+			File jreZip = new File(plugins, ext.getJre(jreVersion));
+			if (!jreZip.exists()) {
+				AbstractStart.downloadConfigFile(HttpClientBuilder.create().build(), jreZip,
+						ext.getJREURL(jreZip.getName()));
+			}
+
+			// Extracting JRE
+			File jreDir = new File(setup, "jre");
+			if (!jreDir.exists()) {
+				unzip(new File(setup), jreZip);
+			}
+
+			List<String> cmds = prepareSetup(plugins, cfg, setup, type, config);
 			setCommandLine(cmds);
 			setWorkingDir(new File(ext.getSetup(), type));
 			super.exec();
@@ -57,7 +82,7 @@ public abstract class AbstractStart extends Exec {
 		}
 		File config = new File(plugins, ".config");
 		if (!config.exists()) {
-			downloadConfigFile(ext.getHttpClient(),config, ext.getConfigUrl());
+			downloadConfigFile(ext.getHttpClient(), config, ext.getConfigUrl());
 		}
 		getLogger().debug("loading .config file->" + config.getAbsolutePath());
 		String string = new String(Files.readAllBytes(config.toPath()));
@@ -211,13 +236,48 @@ public abstract class AbstractStart extends Exec {
 		return prepareRunner(root, config.getString("runJar"), con);
 	}
 
+	private void unzip(File destination, File source) throws IOException {
+		if (!destination.exists()) {
+			destination.mkdirs();
+		}
+		System.out.println("Please wait unziping downloaded jre to " + destination.getAbsolutePath());
+		ZipInputStream zipIn = new ZipInputStream(new FileInputStream(source));
+		ZipEntry entry = zipIn.getNextEntry();
+		// iterates over entries in the zip file
+		while (entry != null) {
+			File file = new File(destination, entry.getName());
+			if (entry.isDirectory()) {
+				// if the entry is a directory, make the directory
+				file.mkdirs();
+			} else {
+				// if the entry is a file, extracts it
+				file.createNewFile();
+				extractFile(zipIn, file);
+			}
+			zipIn.closeEntry();
+			entry = zipIn.getNextEntry();
+		}
+		zipIn.close();
+		System.out.println("Unziping jre completed");
+	}
+
+	private void extractFile(ZipInputStream zipIn, File file) throws IOException {
+		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
+		byte[] bytesIn = new byte[4096];
+		int read = 0;
+		while ((read = zipIn.read(bytesIn)) != -1) {
+			bos.write(bytesIn, 0, read);
+		}
+		bos.close();
+	}
+
 	private List<String> prepareRunner(File root, String jar, Configuration cfg) {
 		List<String> cmds = new ArrayList<>();
 		// exec $JAVA $* -Xdebug
 		// -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n -jar
 		// org.eclipse.osgi_3.10.101.v20150820-1432.jar -console 2501
 
-		cmds.add("java");
+		cmds.add("../jre/bin/java");
 
 		String ms = cfg.getMs();
 		if (ms != null) {

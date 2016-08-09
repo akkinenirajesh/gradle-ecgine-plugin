@@ -38,6 +38,7 @@ public class EcgineExtension {
 	private static final String CREATE_PACKAGE = "/api/createpackage";
 	private static final String CREATE_PACKAGE_VERSION = "/api/createpackageversion";
 	private static final String LOGIN = "/apikey";
+	public static final String DEFAULT_JRE_VERSION = "jre-8u77";
 
 	public static final String NAME = "ecgine";
 
@@ -254,4 +255,24 @@ public class EcgineExtension {
 		return "http://s1.infra.ecgine.com/certificate/vimukti_codegen_bundle.crt";
 	}
 
+	public String getJre(String jreName) {
+		String osName = System.getProperty("os.name");
+		if (osName.equalsIgnoreCase("Linux")) {
+			jreName = jreName + "-linux";
+		}
+		String model = System.getProperty("sun.arch.data.model");
+		return jreName + "-x" + model + ".zip";
+	}
+
+	/**
+	 * def jres_download_url="http://192.168.0.2/ecgine/jres";
+	 * 
+	 * println
+	 * "downloading jre: {jres_download_url}/${jre_version}-${jre_platform}.zip"
+	 * 
+	 * @return URL Of JRE
+	 */
+	public String getJREURL(String jre) {
+		return "http://s1.infra.ecgine.com/ecgine/jres/" + jre;
+	}
 }
