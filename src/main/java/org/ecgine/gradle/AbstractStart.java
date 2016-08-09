@@ -46,15 +46,23 @@ public abstract class AbstractStart extends Exec {
 				plugins.mkdirs();
 			}
 			String setup = ext.getSetup();
-			// Downloading JRE
-			File jreZip = new File(plugins, "jre.zip");
-			if (!jreZip.exists()) {
-				AbstractStart.downloadConfigFile(HttpClientBuilder.create().build(), jreZip, ext.getJREURL());
+			String jreVersion = null;
+			if (config.has("jreVersion")) {
+				jreVersion = config.getString("jreVersion");
+			} else {
+				jreVersion = EcgineExtension.DEFAULT_JRE_VERSION;
 			}
+			// Downloading JRE
+			File jreZip = new File(plugins, ext.getJre(jreVersion));
+			if (!jreZip.exists()) {
+				AbstractStart.downloadConfigFile(HttpClientBuilder.create().build(), jreZip,
+						ext.getJREURL(jreZip.getName()));
+			}
+
 			// Extracting JRE
-			File jre = new File(setup, "jre");
-			if (!jre.exists()) {
-				unzip(new File(setup), new File(plugins, "jre.zip"));
+			File jreDir = new File(setup, "jre");
+			if (!jreDir.exists()) {
+				unzip(new File(setup), jreZip);
 			}
 
 			List<String> cmds = prepareSetup(plugins, cfg, setup, type, config);
