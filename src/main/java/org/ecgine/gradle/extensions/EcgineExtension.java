@@ -23,7 +23,6 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-import org.gradle.internal.impldep.org.apache.commons.lang.SystemUtils;
 
 import groovy.lang.Closure;
 
