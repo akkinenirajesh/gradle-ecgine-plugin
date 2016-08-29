@@ -276,8 +276,11 @@ public abstract class AbstractStart extends Exec {
 		// exec $JAVA $* -Xdebug
 		// -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n -jar
 		// org.eclipse.osgi_3.10.101.v20150820-1432.jar -console 2501
-
-		cmds.add("../jre/bin/java");
+		if (EcgineExtension.isLinux()) {
+			cmds.add("../jre/bin/java");
+		}else{
+			cmds.add("../jre/bin/java.exe");
+		}
 
 		String ms = cfg.getMs();
 		if (ms != null) {
