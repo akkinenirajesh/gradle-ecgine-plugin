@@ -17,7 +17,7 @@ buildscript {
 		jcenter()
 	}
 	dependencies {
-		classpath 'org.ecgine.gradle:gradle-ecgine-plugin:1.1.2'
+		classpath 'org.ecgine.gradle:gradle-ecgine-plugin:1.1.3'
 	}
 }
 
@@ -106,7 +106,7 @@ Property | Default Value | Description
 -------- | ------------- | -----------
 company | 'Test' | Name of the company
 company | 'India' | Country of that company
-email | 'test@example.com' | Email id to login
+email | 'test@master.com' | Email id to login
 firstName | 'First' | First name of that user
 lastName | 'Last' | Last name of that user
 password | 'password' | A password to login

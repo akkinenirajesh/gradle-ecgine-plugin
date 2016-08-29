@@ -3,7 +3,7 @@ package org.ecgine.gradle.extensions;
 public class Master {
 	private String company = "Test";
 	private String country = "India";
-	private String email = "test@example.com";
+	private String email = "test@master.com";
 	private String firstName = "First";
 	private String lastName = "Last";
 	private String password = "password";
