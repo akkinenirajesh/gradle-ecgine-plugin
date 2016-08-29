@@ -255,9 +255,14 @@ public class EcgineExtension {
 		return "http://s1.infra.ecgine.com/certificate/vimukti_codegen_bundle.crt";
 	}
 
+	public static boolean isLinux() {
+		return System.getProperty("os.name").equalsIgnoreCase("Linux");
+	}
+	public static boolean isWindows() {
+		return System.getProperty("os.name").equalsIgnoreCase("Windows");
+	}
 	public String getJre(String jreName) {
-		String osName = System.getProperty("os.name");
-		if (osName.equalsIgnoreCase("Linux")) {
+		if (isLinux()) {
 			jreName = jreName + "-linux";
 		}
 		String model = System.getProperty("sun.arch.data.model");
@@ -269,6 +274,7 @@ public class EcgineExtension {
 	 * 
 	 * println
 	 * "downloading jre: {jres_download_url}/${jre_version}-${jre_platform}.zip"
+	 * 
 	 * 
 	 * @return URL Of JRE
 	 */

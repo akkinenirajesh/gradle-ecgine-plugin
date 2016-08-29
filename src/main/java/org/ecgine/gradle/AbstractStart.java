@@ -20,6 +20,7 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -276,8 +277,11 @@ public abstract class AbstractStart extends Exec {
 		// exec $JAVA $* -Xdebug
 		// -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n -jar
 		// org.eclipse.osgi_3.10.101.v20150820-1432.jar -console 2501
-
-		cmds.add("../jre/bin/java");
+		if (EcgineExtension.isWindows()) {
+			cmds.add("../jre/bin/java.exe");
+		} else {
+			cmds.add("../jre/bin/java");
+		}
 
 		String ms = cfg.getMs();
 		if (ms != null) {
@@ -307,7 +311,11 @@ public abstract class AbstractStart extends Exec {
 			cmds.add(String.valueOf(cp));
 		}
 
-		getLogger().debug("Command:" + cmds.toString());
+		StringBuilder cmdString = new StringBuilder();
+		for (String cmd : cmds) {
+			cmdString.append(" ").append(cmd);
+		}
+		getLogger().debug("Command:" + cmdString.toString());
 		return cmds;
 	}
 
