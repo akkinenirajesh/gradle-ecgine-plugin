@@ -17,7 +17,7 @@ buildscript {
 		jcenter()
 	}
 	dependencies {
-		classpath 'org.ecgine.gradle:gradle-ecgine-plugin:1.1.4'
+		classpath 'org.ecgine.gradle:gradle-ecgine-plugin:1.1.5'
 	}
 }
 
