@@ -278,7 +278,9 @@ public abstract class AbstractStart extends Exec {
 		// -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=n -jar
 		// org.eclipse.osgi_3.10.101.v20150820-1432.jar -console 2501
 		if (EcgineExtension.isWindows()) {
-			cmds.add("../jre/bin/java.exe");
+			cmds.add("cmd");
+			cmds.add("/c");
+			cmds.add("..\\jre\\bin\\java.exe");
 		} else {
 			cmds.add("../jre/bin/java");
 		}
